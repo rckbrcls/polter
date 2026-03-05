@@ -1,18 +1,35 @@
 {
-  "name": "polterbase",
-  "version": "0.1.0",
-  "description": "A core package for the Polterware ecosystem.",
+  "name": "@polterware/polterbase",
+  "version": "0.1.1",
+  "description": "Core package for the Polterware ecosystem, with shared utilities and CLI foundations.",
   "type": "module",
   "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "bin": {
     "polterbase": "./dist/index.js"
   },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "repository": {
     "type": "git",
     "url": "https://github.com/polterware/polterbase.git"
+  },
+  "bugs": {
+    "url": "https://github.com/polterware/polterbase/issues"
+  },
+  "homepage": "https://github.com/polterware/polterbase#readme",
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "dev": "tsup src/index.ts --watch --format esm --dts",
@@ -24,19 +41,24 @@
   "keywords": [
     "polterware",
     "polterbase",
-    "sdk"
+    "sdk",
+    "cli",
+    "typescript"
   ],
-  "author": "Erick Patrick Barcelos",
+  "author": "Polterware",
   "license": "MIT",
-  "devDependencies": {
-    "@types/node": "^22.13.10",
-    "tsup": "^8.3.6",
-    "typescript": "^5.8.2",
-    "vitest": "^3.0.7"
+  "engines": {
+    "node": ">=18"
   },
   "dependencies": {
     "@clack/prompts": "^1.1.0",
     "conf": "^15.1.0",
     "picocolors": "^1.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "tsup": "^8.3.6",
+    "typescript": "^5.8.2",
+    "vitest": "^3.0.7"
   }
 }
