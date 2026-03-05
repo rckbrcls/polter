@@ -43,6 +43,20 @@ polterbase
 
 `polterbase` is a global CLI tool. Do not add it to `dependencies` or `devDependencies` of app projects.
 
+### Update
+
+If you run Polterbase with `npx`, always use the latest published version explicitly:
+
+```bash
+npx @polterware/polterbase@latest
+```
+
+If you installed it globally, update it with:
+
+```bash
+npm install -g @polterware/polterbase@latest
+```
+
 ---
 
 ## Requirements
