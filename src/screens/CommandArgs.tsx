@@ -177,6 +177,7 @@ export function CommandArgs({
           );
         }}
         onCancel={onBack}
+        boxedSections
       />
 
       <StatusBar hint="↑↓ navigate · Enter select · → pin run · Esc back" />

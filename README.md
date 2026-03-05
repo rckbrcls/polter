@@ -11,8 +11,8 @@ Polterbase is a productivity layer on top of the official `supabase` CLI. Instea
 ## Features
 
 - **Interactive Command Builder**: Guided flow for command + subcommand + extra args
-- **Suggested Subcommand Picker**: Select common args (for example `db pull`) before typing custom args
-- **Unified Command Board**: Pinned commands, grouped categories, and actions in one screen
+- **Suggested Subcommand Picker**: Select common args (for example `db pull`) from boxed sections before typing custom args
+- **Unified Command Board**: Pinned runs, pinned commands, grouped categories, and actions in boxed sections on one screen
 - **Global Flags Picker**: Add common global flags in one step
 - **Pinned Commands and Runs**: Toggle base command pins with `→` and pin exact runs after success
 - **Custom Command Mode**: Run raw Supabase arguments like `-v` or `status -o json`
@@ -161,7 +161,10 @@ Polterbase supports two pinned sections at the top of the main menu:
 - `Pinned Runs` for exact commands like `db pull --debug`
 - `Pinned Commands` for base commands like `db` or `start`
 
+The main menu and the suggested-args screen group related options into boxed sections so pinned items, command groups, and actions stay visually separated.
+
 Use `→` on a selected base command to pin or unpin it.
+Use `→` on the suggested subcommand screen to pin exact runs like `db pull` before executing.
 After a successful execution, Polterbase can also pin that exact command into `Pinned Runs`.
 
 Pins are persisted locally using OS-level app config storage.

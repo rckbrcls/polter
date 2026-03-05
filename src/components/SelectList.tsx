@@ -220,7 +220,7 @@ export function SelectList({
 
         <Box width={labelWidth}>
           <Text
-            color={isSelected ? "cyan" : isPinnedRow(item) ? "green" : undefined}
+            color={isSelected ? "cyan" : isPinnedRow(item) ? "white" : undefined}
             bold={isSelected || isPinnedRow(item)}
           >
             {item.icon ? `${item.icon} ` : ""}

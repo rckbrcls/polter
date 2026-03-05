@@ -61,6 +61,12 @@ export function buildCommandArgItems({
       };
     }),
     {
+      value: "__actions_header__",
+      label: "⚡ Actions",
+      kind: "header",
+      selectable: false,
+    },
+    {
       value: "__run_base__",
       label: "Run without additional args",
       hint: [
