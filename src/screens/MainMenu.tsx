@@ -3,6 +3,7 @@ import { Box, Text } from "ink";
 import { GhostBanner } from "../components/GhostBanner.js";
 import { SelectList, type SelectItem } from "../components/SelectList.js";
 import { StatusBar } from "../components/StatusBar.js";
+import { inkColors } from "../theme.js";
 import {
   getPinnedCommands,
   getPinnedRuns,
@@ -115,7 +116,7 @@ export function MainMenu({
 
       {pinFeedback && (
         <Box marginBottom={1}>
-          <Text color="green">✓ {pinFeedback}</Text>
+          <Text color={inkColors.accent}>✓ {pinFeedback}</Text>
         </Box>
       )}
 

@@ -4,6 +4,7 @@ import {
   buildBoxedSectionLayout,
   countBoxedSectionLines,
 } from "./selectListSections.js";
+import { inkColors } from "../theme.js";
 
 export type SelectItemKind = "header" | "command" | "run" | "action";
 
@@ -214,13 +215,19 @@ export function SelectList({
 
     return (
       <Box key={item.id ?? `${item.value}-${globalIdx}`} gap={1}>
-        <Text color={isSelected ? "cyan" : undefined}>
+        <Text color={isSelected ? inkColors.accent : undefined}>
           {isSelected ? "❯" : " "}
         </Text>
 
         <Box width={labelWidth}>
           <Text
-            color={isSelected ? "cyan" : isPinnedRow(item) ? "white" : undefined}
+            color={
+              isSelected
+                ? inkColors.accent
+                : isPinnedRow(item)
+                  ? "white"
+                  : undefined
+            }
             bold={isSelected || isPinnedRow(item)}
           >
             {item.icon ? `${item.icon} ` : ""}
@@ -245,7 +252,7 @@ export function SelectList({
             if (section.type === "heading") {
               return (
                 <Box key={section.key}>
-                  <Text color="yellow" bold>
+                  <Text color={inkColors.accent} bold>
                     {section.label}
                   </Text>
                 </Box>
@@ -264,13 +271,12 @@ export function SelectList({
                 key={section.key}
                 flexDirection="column"
                 borderStyle="round"
-                borderColor={
-                  hasSelectedRow ? "cyan" : isPinnedSection ? "green" : "yellow"
-                }
+                borderColor={inkColors.accent}
+                borderDimColor={!hasSelectedRow && !isPinnedSection}
                 paddingX={1}
               >
                 {section.title && (
-                  <Text color={hasSelectedRow ? "cyan" : "yellow"} bold>
+                  <Text color={inkColors.accent} bold>
                     {section.title}
                   </Text>
                 )}
@@ -293,7 +299,7 @@ export function SelectList({
                   key={item.id ?? `${item.value}-${globalIdx}`}
                   marginTop={i === 0 ? 0 : 1}
                 >
-                  <Text color="yellow" bold>
+                  <Text color={inkColors.accent} bold>
                     {item.label}
                   </Text>
                 </Box>

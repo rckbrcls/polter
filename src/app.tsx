@@ -1,12 +1,12 @@
 import React from "react";
 import { Box, Text, useApp } from "ink";
-import pc from "picocolors";
 import { useNavigation } from "./hooks/useNavigation.js";
 import { MainMenu } from "./screens/MainMenu.js";
 import { CommandArgs } from "./screens/CommandArgs.js";
 import { CustomCommand } from "./screens/CustomCommand.js";
 import { FlagSelection } from "./screens/FlagSelection.js";
 import { CommandExecution } from "./screens/CommandExecution.js";
+import { colors } from "./theme.js";
 
 export function App(): React.ReactElement {
   const { screen, params, navigate, goBack } = useNavigation();
@@ -15,9 +15,9 @@ export function App(): React.ReactElement {
   const handleExit = () => {
     process.stdout.write(
       "\n" +
-      pc.dim("Thank you for using ") +
-      pc.cyan(pc.bold("Polterbase")) +
-      pc.dim("!") +
+      colors.dim("Thank you for using ") +
+      colors.primaryBold("Polterbase") +
+      colors.dim("!") +
       "\n\n",
     );
     exit();

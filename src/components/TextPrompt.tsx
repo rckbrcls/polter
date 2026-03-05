@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Box, Text, useInput } from "ink";
 import TextInputComponent from "ink-text-input";
+import { inkColors } from "../theme.js";
 
 interface TextPromptProps {
   label: string;
@@ -41,13 +42,13 @@ export function TextPrompt({
   return (
     <Box flexDirection="column">
       <Box gap={1}>
-        <Text color="cyan" bold>
+        <Text color={inkColors.accent} bold>
           ?
         </Text>
         <Text>{label}</Text>
       </Box>
       <Box gap={1} marginLeft={2}>
-        <Text color="cyan">❯</Text>
+        <Text color={inkColors.accent}>❯</Text>
         <TextInputComponent
           value={value}
           onChange={(val) => {

@@ -1,13 +1,13 @@
 import React from "react";
 import { Box, Text } from "ink";
-import { ghost as ghostData, VERSION } from "../theme.js";
+import { ghost as ghostData, inkColors, VERSION } from "../theme.js";
 
 export function GhostBanner(): React.ReactElement {
   return (
     <Box flexDirection="row" alignItems="flex-start" gap={2} marginBottom={1}>
       <Box flexDirection="column">
         {ghostData.art.map((line, i) => (
-          <Text key={i} color="cyan">
+          <Text key={i} color={inkColors.accent}>
             {line}
           </Text>
         ))}
@@ -16,10 +16,14 @@ export function GhostBanner(): React.ReactElement {
       <Box
         flexDirection="column"
         borderStyle="single"
-        borderColor="cyan"
+        borderColor={inkColors.accent}
         paddingX={1}
       >
-        <Text backgroundColor="cyan" color="black" bold>
+        <Text
+          backgroundColor={inkColors.accent}
+          color={inkColors.accentContrast}
+          bold
+        >
           {" POLTERBASE "}
         </Text>
         <Text dimColor>Version: {VERSION}</Text>

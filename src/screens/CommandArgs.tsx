@@ -10,6 +10,7 @@ import {
   getRunCommandFromArgsSelection,
 } from "./commandArgsModel.js";
 import type { NavigationParams, Screen } from "../hooks/useNavigation.js";
+import { inkColors } from "../theme.js";
 
 interface CommandArgsProps {
   command: string;
@@ -67,7 +68,7 @@ export function CommandArgs({
     return (
       <Box flexDirection="column">
         <Box marginBottom={1} gap={1}>
-          <Text color="cyan" bold>
+          <Text color={inkColors.accent} bold>
             Command
           </Text>
           <Text>{command}</Text>
@@ -110,7 +111,7 @@ export function CommandArgs({
   return (
     <Box flexDirection="column">
       <Box marginBottom={1} gap={1}>
-        <Text color="cyan" bold>
+        <Text color={inkColors.accent} bold>
           Command
         </Text>
         <Text>{command}</Text>
@@ -118,7 +119,7 @@ export function CommandArgs({
 
       {pinFeedback && (
         <Box marginBottom={1}>
-          <Text color="green">✓ {pinFeedback}</Text>
+          <Text color={inkColors.accent}>✓ {pinFeedback}</Text>
         </Box>
       )}
 

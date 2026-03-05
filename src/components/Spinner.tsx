@@ -1,6 +1,7 @@
 import React from "react";
 import { Text } from "ink";
 import InkSpinner from "ink-spinner";
+import { inkColors } from "../theme.js";
 
 interface SpinnerProps {
   label?: string;
@@ -9,7 +10,7 @@ interface SpinnerProps {
 
 export function Spinner({
   label = "Running...",
-  color = "cyan",
+  color = inkColors.accent,
 }: SpinnerProps): React.ReactElement {
   return (
     <Text>

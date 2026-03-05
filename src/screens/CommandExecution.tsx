@@ -8,6 +8,7 @@ import { StatusBar } from "../components/StatusBar.js";
 import { useCommand } from "../hooks/useCommand.js";
 import { isPinnedRun, togglePinnedRun } from "../data/pins.js";
 import { openInBrowser, copyToClipboard } from "../lib/clipboard.js";
+import { inkColors } from "../theme.js";
 
 interface CommandExecutionProps {
   args: string[];
@@ -81,7 +82,7 @@ export function CommandExecution({
       <Box flexDirection="column">
         <Divider />
         <Box marginY={1} gap={1}>
-          <Text color="cyan" bold>
+          <Text color={inkColors.accent} bold>
             ▶
           </Text>
           <Text dimColor>Running:</Text>
@@ -100,10 +101,10 @@ export function CommandExecution({
       <Box flexDirection="column">
         <Divider />
         <Box marginY={1} gap={1}>
-          <Text color="green" bold>
+          <Text color={inkColors.accent} bold>
             ✓
           </Text>
-          <Text color="green" bold>
+          <Text color={inkColors.accent} bold>
             Command completed successfully!
           </Text>
         </Box>
@@ -129,17 +130,17 @@ export function CommandExecution({
       <Box flexDirection="column">
         <Divider />
         <Box marginY={1} gap={1}>
-          <Text color="green" bold>
+          <Text color={inkColors.accent} bold>
             ✓
           </Text>
-          <Text color="green" bold>
+          <Text color={inkColors.accent} bold>
             Command completed successfully!
           </Text>
         </Box>
 
         {pinMessage && (
           <Box marginBottom={1}>
-            <Text color="green">{pinMessage}</Text>
+            <Text color={inkColors.accent}>{pinMessage}</Text>
           </Box>
         )}
 
@@ -203,12 +204,12 @@ export function CommandExecution({
           {(result.spawnError.includes("ENOENT") ||
             result.spawnError.includes("not found")) && (
               <Box flexDirection="column" marginLeft={2} marginTop={1}>
-                <Text color="yellow" bold>
+                <Text color={inkColors.accent} bold>
                   💡 Supabase CLI not found in PATH
                 </Text>
                 <Box gap={1}>
                   <Text dimColor>Install it:</Text>
-                  <Text color="cyan">
+                  <Text color={inkColors.accent}>
                     https://supabase.com/docs/guides/cli
                   </Text>
                 </Box>
@@ -235,7 +236,7 @@ export function CommandExecution({
           {!hasDebug && (
             <Box marginLeft={2} marginTop={1} gap={1}>
               <Text dimColor>💡 Tip: retry with</Text>
-              <Text color="cyan">--debug</Text>
+              <Text color={inkColors.accent}>--debug</Text>
               <Text dimColor>to see detailed logs</Text>
             </Box>
           )}

@@ -1,5 +1,6 @@
 import React from "react";
 import { Box, Text, useInput } from "ink";
+import { inkColors } from "../theme.js";
 
 interface ConfirmPromptProps {
   message: string;
@@ -24,7 +25,7 @@ export function ConfirmPrompt({
 
   return (
     <Box gap={1}>
-      <Text color="cyan" bold>
+      <Text color={inkColors.accent} bold>
         ?
       </Text>
       <Text>{message}</Text>

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Box, Text, useInput } from "ink";
+import { inkColors } from "../theme.js";
 
 interface FlagToggleProps {
   flags: { value: string; label: string; hint?: string }[];
@@ -49,7 +50,7 @@ export function FlagToggle({
   return (
     <Box flexDirection="column">
       <Box marginBottom={1}>
-        <Text bold color="cyan">
+        <Text bold color={inkColors.accent}>
           ⚑ Global Flags
         </Text>
         <Text dimColor> (Space to toggle, Enter to confirm)</Text>
@@ -61,17 +62,19 @@ export function FlagToggle({
 
         return (
           <Box key={flag.value} gap={1}>
-            <Text color={isActive ? "cyan" : undefined}>
+            <Text color={isActive ? inkColors.accent : undefined}>
               {isActive ? "❯" : " "}
             </Text>
             <Text
-              color={isChecked ? "green" : isActive ? "cyan" : undefined}
+              color={
+                isChecked || isActive ? inkColors.accent : undefined
+              }
               bold={isChecked}
             >
               {isChecked ? "◉" : "○"}
             </Text>
             <Text
-              color={isActive ? "cyan" : undefined}
+              color={isActive ? inkColors.accent : undefined}
               bold={isActive}
             >
               {flag.label}
