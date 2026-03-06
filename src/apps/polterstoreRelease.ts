@@ -1,8 +1,8 @@
 import type { ParsedCliOptions } from "./types.js";
 
-export const DEFAULT_URU_GITHUB_REPO = "polterware/uru";
-export const DEFAULT_ARTIFACT_ENV_VAR = "POLTERBASE_URU_MACOS_ARTIFACT_URL";
-export const DEFAULT_GITHUB_REPO_ENV_VAR = "POLTERBASE_URU_GITHUB_REPO";
+export const DEFAULT_POLTERSTORE_GITHUB_REPO = "polterware/polterstore";
+export const DEFAULT_ARTIFACT_ENV_VAR = "POLTERBASE_POLTERSTORE_MACOS_ARTIFACT_URL";
+export const DEFAULT_GITHUB_REPO_ENV_VAR = "POLTERBASE_POLTERSTORE_GITHUB_REPO";
 
 const GITHUB_API_BASE = "https://api.github.com/repos";
 
@@ -23,7 +23,7 @@ export interface GitHubRelease {
   assets: GitHubReleaseAsset[];
 }
 
-export interface ResolvedUruArtifact {
+export interface ResolvedPolterstoreArtifact {
   url: string;
   fileName: string;
   size?: number;
@@ -126,12 +126,12 @@ async function parseGitHubReleaseResponse(
   };
 }
 
-export function normalizeUruReleaseVersion(version: string): string {
+export function normalizePolterstoreReleaseVersion(version: string): string {
   return version.trim().replace(/^v/i, "");
 }
 
 function buildVersionTagCandidates(version: string): string[] {
-  const normalized = normalizeUruReleaseVersion(version);
+  const normalized = normalizePolterstoreReleaseVersion(version);
 
   if (!normalized) {
     return [];
@@ -168,7 +168,7 @@ async function fetchGitHubRelease(
     }
 
     throw new Error(
-      `Unable to find release ${normalizeUruReleaseVersion(version)} in ${repo}.`,
+      `Unable to find release ${normalizePolterstoreReleaseVersion(version)} in ${repo}.`,
     );
   }
 
@@ -184,7 +184,7 @@ async function fetchGitHubRelease(
 
 export function getArtifactFileNameFromUrl(
   url: string,
-  fallback = "uru-macos.zip",
+  fallback = "polterstore-macos.zip",
 ): string {
   try {
     const pathname = new URL(url).pathname;
@@ -212,7 +212,7 @@ function hasMacosHint(name: string): boolean {
   );
 }
 
-export function isSupportedUruMacosArtifactName(name: string): boolean {
+export function isSupportedPolterstoreMacosArtifactName(name: string): boolean {
   return hasSupportedArchiveFormat(name) && hasMacosHint(name);
 }
 
@@ -257,13 +257,13 @@ function getFormatPriority(name: string): number {
   return name.toLowerCase().endsWith(".app.tar.gz") ? 0 : 1;
 }
 
-export function selectUruMacosReleaseAsset(
+export function selectPolterstoreMacosReleaseAsset(
   assets: GitHubReleaseAsset[],
   arch: string = process.arch,
 ): GitHubReleaseAsset {
   const supported = assets
     .map((asset, index) => ({ asset, index }))
-    .filter(({ asset }) => isSupportedUruMacosArtifactName(asset.name))
+    .filter(({ asset }) => isSupportedPolterstoreMacosArtifactName(asset.name))
     .sort((left, right) => {
       const archPriority =
         getArchPriority(left.asset.name, arch) - getArchPriority(right.asset.name, arch);
@@ -290,12 +290,12 @@ export function selectUruMacosReleaseAsset(
   return supported[0]!.asset;
 }
 
-export async function resolveUruMacosArtifact(
+export async function resolvePolterstoreMacosArtifact(
   options: Pick<ParsedCliOptions, "artifactUrl" | "version">,
   env: NodeJS.ProcessEnv = process.env,
   fetchImpl: typeof fetch = fetch,
   arch: string = process.arch,
-): Promise<ResolvedUruArtifact> {
+): Promise<ResolvedPolterstoreArtifact> {
   const explicitUrl = options.artifactUrl?.trim() || env[DEFAULT_ARTIFACT_ENV_VAR]?.trim();
   if (explicitUrl) {
     return {
@@ -305,9 +305,9 @@ export async function resolveUruMacosArtifact(
     };
   }
 
-  const repo = env[DEFAULT_GITHUB_REPO_ENV_VAR]?.trim() || DEFAULT_URU_GITHUB_REPO;
+  const repo = env[DEFAULT_GITHUB_REPO_ENV_VAR]?.trim() || DEFAULT_POLTERSTORE_GITHUB_REPO;
   const release = await fetchGitHubRelease(repo, options.version, fetchImpl, env);
-  const asset = selectUruMacosReleaseAsset(release.assets, arch);
+  const asset = selectPolterstoreMacosReleaseAsset(release.assets, arch);
 
   return {
     url: asset.browserDownloadUrl,

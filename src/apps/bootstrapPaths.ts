@@ -1,7 +1,7 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
 
-export function getUruBootstrapPayloadPath(): string {
+export function getPolterstoreBootstrapPayloadPath(): string {
   const home = homedir();
 
   if (process.platform === "darwin") {
@@ -9,7 +9,7 @@ export function getUruBootstrapPayloadPath(): string {
       home,
       "Library",
       "Application Support",
-      "uru",
+      "polterstore",
       "bootstrap",
       "supabase.json",
     );
@@ -17,8 +17,8 @@ export function getUruBootstrapPayloadPath(): string {
 
   if (process.platform === "win32") {
     const appData = process.env.APPDATA ?? join(home, "AppData", "Roaming");
-    return join(appData, "uru", "bootstrap", "supabase.json");
+    return join(appData, "polterstore", "bootstrap", "supabase.json");
   }
 
-  return join(home, ".config", "uru", "bootstrap", "supabase.json");
+  return join(home, ".config", "polterstore", "bootstrap", "supabase.json");
 }

@@ -7,9 +7,9 @@ describe("parseCliArgs", () => {
       parseCliArgs([
         "app",
         "setup",
-        "uru",
+        "polterstore",
         "--path",
-        "/tmp/uru",
+        "/tmp/polterstore",
         "--yes",
         "--create-project",
       ]),
@@ -17,8 +17,8 @@ describe("parseCliArgs", () => {
       mode: "app",
       options: {
         action: "setup",
-        app: "uru",
-        path: "/tmp/uru",
+        app: "polterstore",
+        path: "/tmp/polterstore",
         yes: true,
         createProject: true,
       },
@@ -30,7 +30,7 @@ describe("parseCliArgs", () => {
       parseCliArgs([
         "app",
         "migrate",
-        "uru",
+        "polterstore",
         "reset",
         "--relink",
       ]),
@@ -38,7 +38,7 @@ describe("parseCliArgs", () => {
       mode: "app",
       options: {
         action: "migrate",
-        app: "uru",
+        app: "polterstore",
         migrationAction: "reset",
         relink: true,
       },
@@ -50,7 +50,7 @@ describe("parseCliArgs", () => {
       parseCliArgs([
         "app",
         "install",
-        "uru",
+        "polterstore",
         "--version",
         "1.2.3",
         "--install-dir",
@@ -60,7 +60,7 @@ describe("parseCliArgs", () => {
       mode: "app",
       options: {
         action: "install",
-        app: "uru",
+        app: "polterstore",
         version: "1.2.3",
         installDir: "/Applications",
       },
@@ -72,7 +72,7 @@ describe("parseCliArgs", () => {
       parseCliArgs([
         "app",
         "update",
-        "uru",
+        "polterstore",
         "--version",
         "1.2.4",
         "--yes",
@@ -81,7 +81,7 @@ describe("parseCliArgs", () => {
       mode: "app",
       options: {
         action: "update",
-        app: "uru",
+        app: "polterstore",
         version: "1.2.4",
         yes: true,
       },
