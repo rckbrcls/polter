@@ -45,6 +45,8 @@ export function FlagSelection({
           onNavigate("confirm-execute", { args: finalArgs, tool });
         }}
         onCancel={onBack}
+        isInputActive={isInputActive}
+        arrowNavigation={panelMode}
       />
 
       {!panelMode && <StatusBar hint="Space toggle · Enter confirm · Esc back" width={width} />}

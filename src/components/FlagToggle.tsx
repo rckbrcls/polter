@@ -6,12 +6,16 @@ interface FlagToggleProps {
   flags: { value: string; label: string; hint?: string }[];
   onSubmit: (selected: string[]) => void;
   onCancel?: () => void;
+  isInputActive?: boolean;
+  arrowNavigation?: boolean;
 }
 
 export function FlagToggle({
   flags,
   onSubmit,
   onCancel,
+  isInputActive = true,
+  arrowNavigation = false,
 }: FlagToggleProps): React.ReactElement {
   const [cursor, setCursor] = useState(0);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -45,7 +49,11 @@ export function FlagToggle({
     if (key.escape && onCancel) {
       onCancel();
     }
-  });
+
+    if (arrowNavigation && key.leftArrow && onCancel) {
+      onCancel();
+    }
+  }, { isActive: isInputActive });
 
   return (
     <Box flexDirection="column">

@@ -18,6 +18,7 @@ interface CommandExecutionProps {
   onBack: () => void;
   onExit: () => void;
   width?: number;
+  height?: number;
   panelMode?: boolean;
   isInputActive?: boolean;
 }
@@ -35,6 +36,7 @@ export function CommandExecution({
   onBack,
   onExit,
   width = 80,
+  height = 24,
   panelMode = false,
   isInputActive = true,
 }: CommandExecutionProps): React.ReactElement {
@@ -67,7 +69,7 @@ export function CommandExecution({
 
   if (phase === "confirm") {
     return (
-      <Box flexDirection="column">
+      <Box flexDirection="column" paddingX={panelMode ? 1 : 0}>
         <ConfirmPrompt
           message={`Execute ${cmdDisplay}?`}
           defaultValue={true}
@@ -78,6 +80,9 @@ export function CommandExecution({
               onBack();
             }
           }}
+          onCancel={onBack}
+          isInputActive={isInputActive}
+          arrowNavigation={panelMode}
         />
       </Box>
     );
@@ -85,8 +90,8 @@ export function CommandExecution({
 
   if (phase === "running") {
     return (
-      <Box flexDirection="column">
-        <Divider width={width} />
+      <Box flexDirection="column" paddingX={panelMode ? 1 : 0}>
+        <Divider width={panelMode ? width - 4 : width} />
         <Box marginY={1} gap={1}>
           <Text color={inkColors.accent} bold>
             ▶
@@ -95,7 +100,7 @@ export function CommandExecution({
           <Text>{cmdDisplay}</Text>
           <ToolBadge tool={tool} />
         </Box>
-        <Divider width={width} />
+        <Divider width={panelMode ? width - 4 : width} />
         <Box marginTop={1}>
           <Spinner label={`Executing ${cmdDisplay}...`} />
         </Box>
@@ -105,8 +110,8 @@ export function CommandExecution({
 
   if (phase === "success-pin-offer") {
     return (
-      <Box flexDirection="column">
-        <Divider width={width} />
+      <Box flexDirection="column" paddingX={panelMode ? 1 : 0}>
+        <Divider width={panelMode ? width - 4 : width} />
         <Box marginY={1} gap={1}>
           <Text color={inkColors.accent} bold>
             ✓
@@ -126,15 +131,22 @@ export function CommandExecution({
             }
             setPhase("success");
           }}
+          onCancel={() => setPhase("success")}
+          isInputActive={isInputActive}
+          arrowNavigation={panelMode}
         />
       </Box>
     );
   }
 
   if (phase === "success") {
+    const successItems = panelMode
+      ? []
+      : [{ value: "__back__", label: "← Back to menu" }];
+
     return (
-      <Box flexDirection="column">
-        <Divider width={width} />
+      <Box flexDirection="column" paddingX={panelMode ? 1 : 0}>
+        <Divider width={panelMode ? width - 4 : width} />
         <Box marginY={1} gap={1}>
           <Text color={inkColors.accent} bold>
             ✓
@@ -150,14 +162,18 @@ export function CommandExecution({
           </Box>
         )}
 
-        <SelectList
-          items={[{ value: "__back__", label: "← Back to menu" }]}
-          onSelect={onBack}
-          onCancel={onBack}
-          width={width}
-          isInputActive={isInputActive}
-          arrowNavigation={panelMode}
-        />
+        {successItems.length > 0 && (
+          <SelectList
+            items={successItems}
+            onSelect={onBack}
+            onCancel={onBack}
+            width={panelMode ? Math.max(20, width - 4) : width}
+            maxVisible={panelMode ? Math.max(6, height - 6) : undefined}
+            isInputActive={isInputActive}
+            arrowNavigation={panelMode}
+            boxedSections={panelMode}
+          />
+        )}
       </Box>
     );
   }
@@ -178,18 +194,18 @@ export function CommandExecution({
     }
   }
 
-  errorItems.push(
-    {
-      value: "copy",
-      label: "📋 Copy command to clipboard",
-    },
-    { value: "menu", label: "← Return to main menu" },
-    { value: "exit", label: "🚪 Exit Polter" },
-  );
+  errorItems.push({
+    value: "copy",
+    label: "📋 Copy command to clipboard",
+  });
+  if (!panelMode) {
+    errorItems.push({ value: "menu", label: "← Return to main menu" });
+  }
+  errorItems.push({ value: "exit", label: "🚪 Exit Polter" });
 
   return (
-    <Box flexDirection="column">
-      <Divider width={width} />
+    <Box flexDirection="column" paddingX={panelMode ? 1 : 0}>
+      <Divider width={panelMode ? width - 4 : width} />
 
       {result?.spawnError ? (
         <Box flexDirection="column" marginY={1}>
@@ -274,9 +290,11 @@ export function CommandExecution({
           }
         }}
         onCancel={onBack}
-        width={width}
+        boxedSections={panelMode}
+        width={panelMode ? Math.max(20, width - 4) : width}
+        maxVisible={panelMode ? Math.max(6, height - 6) : undefined}
         isInputActive={isInputActive}
-          arrowNavigation={panelMode}
+        arrowNavigation={panelMode}
       />
 
       {!panelMode && <StatusBar width={width} />}

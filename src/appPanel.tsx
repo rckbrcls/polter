@@ -26,6 +26,65 @@ import { PipelineBuilder } from "./screens/PipelineBuilder.js";
 import { PipelineExecution } from "./screens/PipelineExecution.js";
 import { getFeatureById } from "./data/features.js";
 import { colors } from "./theme.js";
+import type { PanelNavState } from "./hooks/usePanelNavigation.js";
+
+const screenLabels: Record<string, string> = {
+  "command-args": "Args",
+  "flag-selection": "Flags",
+  "confirm-execute": "Execute",
+  "command-execution": "Execute",
+  "custom-command": "Custom Cmd",
+  "pipeline-list": "Pipelines",
+  "pipeline-builder": "Builder",
+  "pipeline-execution": "Run",
+  "self-update": "Update",
+  "tool-status": "Status",
+  "project-config": "Config",
+};
+
+function buildBreadcrumb(nav: PanelNavState): string {
+  // Base label from the current view
+  let base: string;
+  switch (nav.view) {
+    case "feature":
+      base = getFeatureById(nav.featureId)?.label ?? nav.featureId;
+      break;
+    case "pinned":
+      base = "Pinned";
+      break;
+    case "custom-command":
+      base = "Custom Cmd";
+      break;
+    case "pipelines":
+      base = "Pipelines";
+      break;
+    case "tool-status":
+      base = "Status";
+      break;
+    case "config":
+      base = "Config";
+      break;
+    case "self-update":
+      base = "Update";
+      break;
+    default:
+      base = nav.view;
+  }
+
+  if (nav.innerScreen === "home") {
+    return base;
+  }
+
+  const parts = [base];
+  for (const entry of nav.innerStack) {
+    if (entry.screen !== "home") {
+      parts.push(screenLabels[entry.screen] ?? entry.screen);
+    }
+  }
+  parts.push(screenLabels[nav.innerScreen] ?? nav.innerScreen);
+
+  return parts.join(" › ");
+}
 
 const FOOTER_HINTS: KeyHint[] = [
   { key: "←→", action: "panels" },
@@ -305,6 +364,7 @@ export function AppPanel(): React.ReactElement {
             onBack={nav.goBackInner}
             onExit={handleExit}
             width={w}
+            height={mainContentHeight}
             panelMode
             isInputActive={isActive}
           />
@@ -418,7 +478,7 @@ export function AppPanel(): React.ReactElement {
   const main = (
     <Panel
       id="main"
-      title={nav.view === "feature" ? getFeatureById(nav.featureId)?.label : nav.view === "pinned" ? "Pinned" : nav.view}
+      title={buildBreadcrumb(nav)}
       width={mainContentWidth}
       height={Math.max(5, height - bannerHeight - 1)}
       focused={focus.isMainFocused}

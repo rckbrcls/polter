@@ -139,6 +139,15 @@ export function SelfUpdate({
 
             onBack();
           }}
+          onCancel={() => {
+            if (repositoryRoot) {
+              setPhase("target");
+            } else {
+              onBack();
+            }
+          }}
+          isInputActive={isInputActive}
+          arrowNavigation={panelMode}
         />
         <Box marginTop={1} marginLeft={2} flexDirection="column">
           <Text dimColor>
