@@ -58,13 +58,14 @@ export function PipelineExecution({
 
   if (!pipeline) {
     return (
-      <Box flexDirection="column">
+      <Box flexDirection="column" paddingX={panelMode ? 1 : 0}>
         <Text color="red">Pipeline not found: {pipelineId}</Text>
         <SelectList
           items={[{ value: "__back__", label: "← Back" }]}
           onSelect={onBack}
           onCancel={onBack}
-          width={width}
+          boxedSections={panelMode}
+          width={panelMode ? Math.max(20, width - 4) : width}
           isInputActive={isInputActive}
           arrowNavigation={panelMode}
         />
@@ -85,7 +86,7 @@ export function PipelineExecution({
   }
 
   return (
-    <Box flexDirection="column">
+    <Box flexDirection="column" paddingX={panelMode ? 1 : 0}>
       <Box marginBottom={1} gap={1}>
         <Text bold color={inkColors.accent}>
           🔗 {pipeline.name}
@@ -141,9 +142,10 @@ export function PipelineExecution({
               onBack();
             }}
             onCancel={onBack}
-            width={width}
+            boxedSections={panelMode}
+            width={panelMode ? Math.max(20, width - 4) : width}
             isInputActive={isInputActive}
-          arrowNavigation={panelMode}
+            arrowNavigation={panelMode}
           />
         </>
       )}

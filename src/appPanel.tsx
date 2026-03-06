@@ -87,12 +87,12 @@ function buildBreadcrumb(nav: PanelNavState): string {
 }
 
 const FOOTER_HINTS: KeyHint[] = [
-  { key: "←→", action: "panels" },
+  { key: "Tab", action: "focus" },
+  { key: "←/Esc", action: "back" },
+  { key: "→/Enter", action: "select" },
   { key: "j/k", action: "nav" },
-  { key: "Enter", action: "select" },
-  { key: "Esc", action: "back" },
-  { key: "q", action: "quit" },
   { key: "p", action: "pin" },
+  { key: "q", action: "quit" },
   { key: "?", action: "help" },
 ];
 
@@ -363,6 +363,7 @@ export function AppPanel(): React.ReactElement {
             args={nav.innerParams.args ?? []}
             tool={nav.innerParams.tool}
             onBack={nav.goBackInner}
+            onHome={nav.goHomeInner}
             onExit={handleExit}
             width={w}
             height={mainContentHeight}

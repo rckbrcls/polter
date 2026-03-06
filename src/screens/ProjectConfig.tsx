@@ -73,6 +73,8 @@ export function ProjectConfig({
             setPhase("overview");
           }}
           onCancel={() => setPhase("overview")}
+          arrowNavigation={panelMode}
+          isInputActive={isInputActive}
         />
       </Box>
     );
@@ -98,6 +100,8 @@ export function ProjectConfig({
             setPhase("overview");
           }}
           onCancel={() => setPhase("overview")}
+          arrowNavigation={panelMode}
+          isInputActive={isInputActive}
         />
       </Box>
     );
@@ -123,6 +127,8 @@ export function ProjectConfig({
             setPhase("overview");
           }}
           onCancel={() => setPhase("overview")}
+          arrowNavigation={panelMode}
+          isInputActive={isInputActive}
         />
       </Box>
     );

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Box, Text } from "ink";
+import { Box, Text, useInput } from "ink";
 import { SelectList } from "../components/SelectList.js";
 import { TextPrompt } from "../components/TextPrompt.js";
 import { ToolBadge } from "../components/ToolBadge.js";
@@ -67,20 +67,17 @@ export function CommandArgs({
     });
   };
 
+  useInput((_input, key) => {
+    if (!command && (key.escape || key.leftArrow)) {
+      onBack();
+    }
+  }, { isActive: isInputActive && !command });
+
   if (!command) {
     return (
       <Box flexDirection="column">
-        <Box marginBottom={1}>
-          <Text color="red">Command not provided.</Text>
-        </Box>
-        <SelectList
-          items={[{ value: "__back__", label: "← Back to menu" }]}
-          onSelect={onBack}
-          onCancel={onBack}
-          width={width}
-          isInputActive={isInputActive}
-          arrowNavigation={panelMode}
-        />
+        <Text color="red">Command not provided.</Text>
+        <Text dimColor>Press Esc or ← to go back</Text>
       </Box>
     );
   }
@@ -114,6 +111,8 @@ export function CommandArgs({
             }
             onBack();
           }}
+          arrowNavigation={panelMode}
+          isInputActive={isInputActive}
         />
 
         {!panelMode && <StatusBar hint="Type args · Enter to continue · Esc to go back" width={width} />}

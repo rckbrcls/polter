@@ -37,7 +37,7 @@ export function PipelineBuilder({
 
   if (phase === "name") {
     return (
-      <Box flexDirection="column">
+      <Box flexDirection="column" paddingX={panelMode ? 1 : 0}>
         <Box marginBottom={1}>
           <Text bold color={inkColors.accent}>
             🔗 New Pipeline
@@ -56,6 +56,8 @@ export function PipelineBuilder({
             setPhase("add-step");
           }}
           onCancel={onBack}
+          arrowNavigation={panelMode}
+          isInputActive={isInputActive}
         />
 
         {!panelMode && <StatusBar hint="Type name · Enter to continue · Esc cancel" width={width} />}
@@ -95,7 +97,7 @@ export function PipelineBuilder({
     ];
 
     return (
-      <Box flexDirection="column">
+      <Box flexDirection="column" paddingX={panelMode ? 1 : 0}>
         <Box marginBottom={1} gap={1}>
           <Text bold color={inkColors.accent}>
             🔗 {name}
@@ -147,7 +149,8 @@ export function PipelineBuilder({
             }
           }}
           maxVisible={Math.max(8, height - 14)}
-          width={width}
+          boxedSections={panelMode}
+          width={panelMode ? Math.max(20, width - 4) : width}
           isInputActive={isInputActive}
           arrowNavigation={panelMode}
         />
@@ -180,7 +183,7 @@ export function PipelineBuilder({
   ];
 
   return (
-    <Box flexDirection="column">
+    <Box flexDirection="column" paddingX={panelMode ? 1 : 0}>
       <Box marginBottom={1}>
         <Text bold color={inkColors.accent}>
           🔗 Review: {name}
@@ -219,9 +222,10 @@ export function PipelineBuilder({
           onBack();
         }}
         onCancel={onBack}
-        width={width}
+        boxedSections={panelMode}
+        width={panelMode ? Math.max(20, width - 4) : width}
         isInputActive={isInputActive}
-          arrowNavigation={panelMode}
+        arrowNavigation={panelMode}
       />
 
       {!panelMode && <StatusBar hint="↑↓ navigate · Enter select · Esc back" width={width} />}

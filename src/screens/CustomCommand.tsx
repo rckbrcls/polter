@@ -92,6 +92,8 @@ export function CustomCommand({
           onNavigate("flag-selection", { args, tool: selectedTool });
         }}
         onCancel={() => setPhase("tool-select")}
+        arrowNavigation={panelMode}
+        isInputActive={isInputActive}
       />
 
       {!panelMode && <StatusBar hint="Type a command · Enter to continue · Esc to go back" width={width} />}

@@ -17,6 +17,7 @@ interface CommandExecutionProps {
   args: string[];
   tool?: CliToolId;
   onBack: () => void;
+  onHome?: () => void;
   onExit: () => void;
   width?: number;
   height?: number;
@@ -35,6 +36,7 @@ export function CommandExecution({
   args: initialArgs,
   tool = "supabase",
   onBack,
+  onHome,
   onExit,
   width = 80,
   height = 24,
@@ -93,6 +95,9 @@ export function CommandExecution({
           isInputActive={isInputActive}
           arrowNavigation={panelMode}
         />
+        <Box marginTop={1}>
+          <Text dimColor>Enter to execute · n to cancel</Text>
+        </Box>
       </Box>
     );
 
@@ -201,8 +206,8 @@ export function CommandExecution({
 
         <SelectList
           items={successItems}
-          onSelect={onBack}
-          onCancel={onBack}
+          onSelect={onHome ?? onBack}
+          onCancel={onHome ?? onBack}
           width={panelMode ? Math.max(20, width - 4) : width}
           maxVisible={panelMode ? Math.max(6, height - 6) : undefined}
           isInputActive={isInputActive}
@@ -233,12 +238,9 @@ export function CommandExecution({
     value: "copy",
     label: "\uD83D\uDCCB Copy command to clipboard",
   });
-  if (!panelMode) {
-    errorItems.push({ value: "menu", label: "\u2190 Return to main menu" });
-  }
   errorItems.push({
-    value: panelMode ? "menu" : "exit",
-    label: panelMode ? "\u2190 Back to menu" : "\uD83D\uDEAA Exit Polter",
+    value: "menu",
+    label: "\u2190 Back to menu",
   });
 
   return (
@@ -327,7 +329,7 @@ export function CommandExecution({
               await copyToClipboard(cmdDisplay);
               break;
             case "menu":
-              onBack();
+              (onHome ?? onBack)();
               break;
             case "exit":
               onExit();

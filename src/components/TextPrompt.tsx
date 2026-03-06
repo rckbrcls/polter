@@ -9,6 +9,8 @@ interface TextPromptProps {
   onSubmit: (value: string) => void;
   onCancel?: () => void;
   validate?: (value: string) => string | undefined;
+  arrowNavigation?: boolean;
+  isInputActive?: boolean;
 }
 
 export function TextPrompt({
@@ -17,6 +19,8 @@ export function TextPrompt({
   onSubmit,
   onCancel,
   validate,
+  arrowNavigation = false,
+  isInputActive = true,
 }: TextPromptProps): React.ReactElement {
   const [value, setValue] = useState("");
   const [error, setError] = useState<string>();
@@ -25,7 +29,10 @@ export function TextPrompt({
     if (key.escape && onCancel) {
       onCancel();
     }
-  });
+    if (arrowNavigation && key.leftArrow && value === "" && onCancel) {
+      onCancel();
+    }
+  }, { isActive: isInputActive });
 
   const handleSubmit = (val: string) => {
     if (validate) {

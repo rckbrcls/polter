@@ -90,10 +90,5 @@ export function buildCommandArgItems({
       hint: "Type any arguments manually",
       kind: "action" as const,
     },
-    {
-      value: "__back__",
-      label: "← Back to menu",
-      kind: "action" as const,
-    },
   ];
 }

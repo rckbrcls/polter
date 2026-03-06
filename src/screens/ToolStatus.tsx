@@ -20,29 +20,28 @@ export function ToolStatus({ onBack, width = 80, height = 24, panelMode = false,
   const tools = useMemo(() => toolIds.map(getToolInfo), []);
 
   if (panelMode) {
+    const statusItems = [
+      { value: "__section__", label: "🔧 Tool Status", kind: "header" as const, selectable: false },
+      ...tools.map((tool) => ({
+        value: tool.id,
+        label: `${tool.installed ? "✓" : "✗"} ${tool.label}`,
+        hint: tool.installed ? (tool.version ?? "installed") : "not found",
+        kind: "action" as const,
+      })),
+    ];
+
     return (
       <Box flexDirection="column" paddingX={1}>
-        <Box marginBottom={1}>
-          <Text bold color={inkColors.accent}>
-            🔧 Tool Status
-          </Text>
-        </Box>
-
-        {tools.map((tool) => (
-          <Box key={tool.id} gap={1} marginLeft={2}>
-            <Text color={tool.installed ? inkColors.accent : "red"}>
-              {tool.installed ? "✓" : "✗"}
-            </Text>
-            <Box width={16}>
-              <Text bold>{tool.label}</Text>
-            </Box>
-            <Text dimColor>
-              {tool.installed
-                ? tool.version ?? "installed"
-                : "not found"}
-            </Text>
-          </Box>
-        ))}
+        <SelectList
+          items={statusItems}
+          onSelect={() => {}}
+          onCancel={onBack}
+          boxedSections
+          width={Math.max(20, width - 4)}
+          maxVisible={Math.max(6, height - 6)}
+          isInputActive={isInputActive}
+          arrowNavigation
+        />
       </Box>
     );
   }

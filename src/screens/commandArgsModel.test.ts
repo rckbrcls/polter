@@ -22,7 +22,6 @@ describe("buildCommandArgItems", () => {
       "__actions_header__",
       "__run_base__",
       "__custom__",
-      "__back__",
     ]);
   });
 });

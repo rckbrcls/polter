@@ -61,7 +61,7 @@ export function FlagToggle({
         <Text bold color={inkColors.accent}>
           ⚑ Global Flags
         </Text>
-        <Text dimColor> (Space to toggle, Enter to confirm)</Text>
+        <Text dimColor> (Space to toggle, {arrowNavigation ? "→" : "Enter"} to confirm)</Text>
       </Box>
 
       {flags.map((flag, i) => {
@@ -96,7 +96,7 @@ export function FlagToggle({
         <Text dimColor>
           {selected.size > 0
             ? `${selected.size} flag${selected.size > 1 ? "s" : ""} selected`
-            : "No flags selected (Enter to skip)"}
+            : `No flags selected (${arrowNavigation ? "→" : "Enter"} to skip)`}
         </Text>
       </Box>
     </Box>
