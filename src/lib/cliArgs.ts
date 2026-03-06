@@ -77,13 +77,6 @@ export function parseCliArgs(argv: string[]): ParsedCliCommand {
       continue;
     }
 
-    if (token.startsWith("--platform")) {
-      const parsed = takeValue(argv, index);
-      options.platform = parsed.value;
-      index = parsed.nextIndex;
-      continue;
-    }
-
     if (token.startsWith("--version")) {
       const parsed = takeValue(argv, index);
       options.version = parsed.value;
@@ -123,11 +116,11 @@ export function printCliHelp(): void {
       "  polterbase app link uru [--path <dir>] [--relink]",
       "  polterbase app migrate uru [push|lint|reset|local-reset] [--path <dir>] [--relink]",
       "  polterbase app configure uru [--path <dir>] [--yes]",
-      "  polterbase app install uru --platform macos [--version <version>] [--artifact-url <url>] [--install-dir <dir>] [--yes]",
+      "  polterbase app install uru [--version <version>] [--artifact-url <url>] [--install-dir <dir>] [--yes]",
       "",
       "Notes:",
       "  - App workflows stay separate from the generic Supabase interactive menu.",
-      "  - `install uru` resolves the latest GitHub release from polterware/uru by default.",
+      "  - `install uru` is macOS-only and resolves the latest GitHub release from polterware/uru by default.",
       "  - Use --artifact-url or POLTERBASE_URU_MACOS_ARTIFACT_URL to override the downloaded asset.",
       "  - Use POLTERBASE_URU_GITHUB_REPO=owner/repo to resolve releases from a different repository.",
       "",

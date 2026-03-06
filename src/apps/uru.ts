@@ -531,9 +531,6 @@ export const uruProfile: AppProfile = {
       case "configure":
         return runConfigure(context);
       case "install":
-        if ((context.options.platform ?? "macos") !== "macos") {
-          throw new Error("Only --platform macos is currently supported for Uru install.");
-        }
         return installMacosApp(context);
       case "migrate":
         return runMigration(

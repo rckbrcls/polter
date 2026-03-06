@@ -125,7 +125,7 @@ polterbase app configure uru --path .
 ```
 
 ```bash
-polterbase app install uru --platform macos
+polterbase app install uru
 ```
 
 `setup uru` installs dependencies, collects Supabase connection data, links the project, pushes migrations, and writes the runtime bootstrap payload used by the desktop app.
@@ -269,13 +269,13 @@ polterbase app configure uru
 ### Install the latest released Uru app
 
 ```bash
-polterbase app install uru --platform macos
+polterbase app install uru
 ```
 
 Install a specific release:
 
 ```bash
-polterbase app install uru --platform macos --version 1.0.0
+polterbase app install uru --version 1.0.0
 ```
 
 ### Check Supabase CLI version

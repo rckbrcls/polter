@@ -51,8 +51,6 @@ describe("parseCliArgs", () => {
         "app",
         "install",
         "uru",
-        "--platform",
-        "macos",
         "--version",
         "1.2.3",
         "--install-dir",
@@ -63,7 +61,6 @@ describe("parseCliArgs", () => {
       options: {
         action: "install",
         app: "uru",
-        platform: "macos",
         version: "1.2.3",
         installDir: "/Applications",
       },
