@@ -10,6 +10,7 @@ interface PipelineListProps {
   onNavigate: (screen: Screen, params?: NavigationParams) => void;
   onBack: () => void;
   width?: number;
+  height?: number;
   panelMode?: boolean;
   isInputActive?: boolean;
 }
@@ -18,6 +19,7 @@ export function PipelineList({
   onNavigate,
   onBack,
   width = 80,
+  height = 24,
   panelMode = false,
   isInputActive = true,
 }: PipelineListProps): React.ReactElement {
@@ -70,18 +72,20 @@ export function PipelineList({
       icon: "➕",
       kind: "action",
     });
-    list.push({
-      id: "action-back",
-      value: "__back__",
-      label: "← Back",
-      kind: "action",
-    });
+    if (!panelMode) {
+      list.push({
+        id: "action-back",
+        value: "__back__",
+        label: "← Back",
+        kind: "action",
+      });
+    }
 
     return list;
-  }, [pipelines]);
+  }, [pipelines, panelMode]);
 
   return (
-    <Box flexDirection="column">
+    <Box flexDirection="column" paddingX={panelMode ? 1 : 0}>
       <Box marginBottom={1}>
         <Text bold color={inkColors.accent}>
           🔗 Pipelines
@@ -103,7 +107,9 @@ export function PipelineList({
           onNavigate("pipeline-execution", { pipelineId: value });
         }}
         onCancel={onBack}
-        width={width}
+        boxedSections={panelMode}
+        width={panelMode ? Math.max(20, width - 4) : width}
+        maxVisible={panelMode ? Math.max(6, height - 6) : undefined}
         isInputActive={isInputActive}
         arrowNavigation={panelMode}
       />

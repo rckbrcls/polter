@@ -107,8 +107,8 @@ export function buildHomeItems({
     selectable: false,
   });
 
-  const toolOrder: Record<string, number> = { supabase: 0, vercel: 1, gh: 2, pulumi: 3 };
-  const toolIcons: Record<string, string> = { supabase: "🟢", vercel: "⚪", gh: "🔵", pulumi: "🟣" };
+  const toolOrder: Record<string, number> = { supabase: 0, vercel: 1, gh: 2, git: 3 };
+  const toolIcons: Record<string, string> = { supabase: "🟢", vercel: "⚪", gh: "🔵", git: "🟠" };
 
   const grouped = new Map<string, typeof activeFeature.commands>();
   for (const cmd of activeFeature.commands) {

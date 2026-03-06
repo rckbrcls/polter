@@ -14,7 +14,6 @@ import { PanelFooter, type KeyHint } from "./components/PanelFooter.js";
 import { Modal } from "./components/Modal.js";
 import { FeatureCommands } from "./components/FeatureCommands.js";
 import { PinnedCommands } from "./components/PinnedCommands.js";
-import { getPinnedCommands, getPinnedRuns } from "./data/pins.js";
 import { CommandArgs } from "./screens/CommandArgs.js";
 import { CustomCommand } from "./screens/CustomCommand.js";
 import { FlagSelection } from "./screens/FlagSelection.js";
@@ -44,19 +43,12 @@ export function AppPanel(): React.ReactElement {
   const { exit } = useApp();
   const nav = usePanelNavigation();
   const focus = usePanelFocus();
-  const [hasPins, setHasPins] = React.useState(
-    () => getPinnedCommands().length > 0 || getPinnedRuns().length > 0,
-  );
-  const sidebarItems = useSidebarItems(hasPins);
+  const sidebarItems = useSidebarItems();
   const modal = useModal();
 
   const refreshPins = React.useCallback(() => {
-    const newHasPins = getPinnedCommands().length > 0 || getPinnedRuns().length > 0;
-    setHasPins(newHasPins);
-    if (!newHasPins && nav.view === "pinned") {
-      nav.selectSidebarItem("database");
-    }
-  }, [nav.view, nav.selectSidebarItem]);
+    // Pins section is always visible; no need to toggle sidebar items
+  }, []);
 
   const singlePanel = width < 60 || height < 15;
 
@@ -204,6 +196,7 @@ export function AppPanel(): React.ReactElement {
             onNavigate={nav.navigateInner}
             onBack={focus.focusSidebar}
             width={mainContentWidth - 2}
+            height={mainContentHeight}
             panelMode
             isInputActive={focus.isMainFocused}
           />
@@ -215,6 +208,7 @@ export function AppPanel(): React.ReactElement {
             onNavigate={nav.navigateInner}
             onBack={focus.focusSidebar}
             width={mainContentWidth - 2}
+            height={mainContentHeight}
             panelMode
             isInputActive={focus.isMainFocused}
           />
@@ -225,6 +219,7 @@ export function AppPanel(): React.ReactElement {
           <ToolStatus
             onBack={focus.focusSidebar}
             width={mainContentWidth - 2}
+            height={mainContentHeight}
             panelMode
             isInputActive={focus.isMainFocused}
           />
@@ -235,6 +230,7 @@ export function AppPanel(): React.ReactElement {
           <ProjectConfig
             onBack={focus.focusSidebar}
             width={mainContentWidth - 2}
+            height={mainContentHeight}
             panelMode
             isInputActive={focus.isMainFocused}
           />
@@ -246,6 +242,7 @@ export function AppPanel(): React.ReactElement {
             onBack={focus.focusSidebar}
             onExit={handleExit}
             width={mainContentWidth - 2}
+            height={mainContentHeight}
             panelMode
             isInputActive={focus.isMainFocused}
           />
@@ -280,6 +277,7 @@ export function AppPanel(): React.ReactElement {
             onNavigate={nav.navigateInner}
             onBack={nav.goBackInner}
             width={w}
+            height={mainContentHeight}
             panelMode
             isInputActive={isActive}
           />
@@ -318,6 +316,7 @@ export function AppPanel(): React.ReactElement {
             onNavigate={nav.navigateInner}
             onBack={nav.goBackInner}
             width={w}
+            height={mainContentHeight}
             panelMode
             isInputActive={isActive}
           />
@@ -352,6 +351,7 @@ export function AppPanel(): React.ReactElement {
             onBack={nav.goBackInner}
             onExit={handleExit}
             width={w}
+            height={mainContentHeight}
             panelMode
             isInputActive={isActive}
           />
@@ -362,6 +362,7 @@ export function AppPanel(): React.ReactElement {
           <ToolStatus
             onBack={nav.goBackInner}
             width={w}
+            height={mainContentHeight}
             panelMode
             isInputActive={isActive}
           />
@@ -372,6 +373,7 @@ export function AppPanel(): React.ReactElement {
           <ProjectConfig
             onBack={nav.goBackInner}
             width={w}
+            height={mainContentHeight}
             panelMode
             isInputActive={isActive}
           />

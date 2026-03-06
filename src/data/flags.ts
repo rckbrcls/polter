@@ -28,11 +28,7 @@ export const toolFlags: Record<CliToolId, FlagDef[]> = {
     { value: "--yes", label: "--yes", hint: "Skip confirmation prompts" },
     { value: "--debug", label: "--debug", hint: "Debug mode" },
   ],
-  pulumi: [
-    { value: "--yes", label: "--yes", hint: "Skip confirmation prompts" },
-    { value: "--debug", label: "--debug", hint: "Debug mode" },
-    { value: "--stack", label: "--stack", hint: "Target a specific stack" },
-  ],
+  git: [],
 };
 
 export function getFlagsForTool(toolId: CliToolId): FlagDef[] {

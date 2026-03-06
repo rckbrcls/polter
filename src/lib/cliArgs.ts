@@ -1,8 +1,9 @@
 import type { AppAction, MigrationAction, ParsedCliOptions } from "../apps/types.js";
 
-export type CliMode = "interactive" | "app" | "help" | "pipeline-run" | "config" | "plan" | "apply" | "status" | "mcp-install";
+export type CliMode = "interactive" | "app" | "help" | "pipeline-run" | "config" | "plan" | "apply" | "status" | "mcp";
 
 export type McpScope = "project" | "user" | "local";
+export type McpAction = "install" | "update" | "status" | "remove";
 
 export interface ParsedCliCommand {
   mode: CliMode;
@@ -11,6 +12,7 @@ export interface ParsedCliCommand {
   configEdit?: boolean;
   classic?: boolean;
   mcpScope?: McpScope;
+  mcpAction?: McpAction;
 }
 
 function takeValue(
@@ -53,11 +55,17 @@ export function parseCliArgs(argv: string[]): ParsedCliCommand {
     return { mode: "pipeline-run", options: {}, pipelineName: argv_[2] };
   }
 
-  if (argv_[0] === "mcp" && argv_[1] === "install") {
-    let mcpScope: McpScope = "local";
-    if (argv_.includes("--project")) mcpScope = "project";
-    else if (argv_.includes("--global")) mcpScope = "user";
-    return { mode: "mcp-install", options: {}, mcpScope };
+  if (argv_[0] === "mcp") {
+    const sub = argv_[1];
+    if (sub === "status") {
+      return { mode: "mcp", options: {}, mcpAction: "status" };
+    }
+    if (sub === "install" || sub === "update" || sub === "remove") {
+      let mcpScope: McpScope = "local";
+      if (argv_.includes("--project")) mcpScope = "project";
+      else if (argv_.includes("--global")) mcpScope = "user";
+      return { mode: "mcp", options: {}, mcpAction: sub, mcpScope };
+    }
   }
 
   if (argv_[0] === "config") {
@@ -164,6 +172,9 @@ export function printCliHelp(): void {
       "  polter mcp install               Install Polter MCP server into Claude Code (local scope)",
       "  polter mcp install --project     Install for this project only (shared via repo)",
       "  polter mcp install --global      Install globally for all projects",
+      "  polter mcp update                Update MCP server to latest version",
+      "  polter mcp status                Show MCP registration and version info",
+      "  polter mcp remove                Remove MCP server registration",
       "",
       "  polter app setup ops [--path <dir>] [--create-project|--use-existing-project] [--yes]",
       "  polter app link ops [--path <dir>] [--relink]",

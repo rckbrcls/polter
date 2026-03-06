@@ -1,40 +1,46 @@
 import { useMemo } from "react";
 import { features } from "../data/features.js";
 
+export type SidebarSection = "workflows" | "features" | "system";
+
 export interface SidebarItem {
   id: string;
   label: string;
   icon: string;
   type: "feature" | "action" | "separator";
+  section?: SidebarSection;
+  sectionTitle?: string;
 }
 
-export function useSidebarItems(hasPins = false): SidebarItem[] {
+export function useSidebarItems(): SidebarItem[] {
   return useMemo(() => {
     const items: SidebarItem[] = [];
 
-    if (hasPins) {
-      items.push({ id: "pinned", label: "Pinned", icon: "📌", type: "action" });
-      items.push({ id: "__sep_pinned__", label: "---", icon: "", type: "separator" });
-    }
+    // Section 1: Workflows
+    items.push({ id: "__sep_workflows__", label: "---", icon: "", type: "separator", sectionTitle: "Workflows" });
+    items.push({ id: "pipelines", label: "Pipelines", icon: "\uD83D\uDD17", type: "action", section: "workflows" });
+    items.push({ id: "pinned", label: "Pinned", icon: "\uD83D\uDCCC", type: "action", section: "workflows" });
+    items.push({ id: "custom-command", label: "Custom Cmd", icon: "\u270F\uFE0F", type: "action", section: "workflows" });
 
+    // Section 2: Features
+    items.push({ id: "__sep_features__", label: "---", icon: "", type: "separator", sectionTitle: "Features" });
     for (const feature of features) {
       items.push({
         id: feature.id,
         label: feature.label,
         icon: feature.icon,
         type: "feature",
+        section: "features",
       });
     }
 
-    items.push({ id: "__sep__", label: "---", icon: "", type: "separator" });
-
-    items.push({ id: "custom-command", label: "Custom Cmd", icon: "✏️", type: "action" });
-    items.push({ id: "pipelines", label: "Pipelines", icon: "🔗", type: "action" });
-    items.push({ id: "tool-status", label: "Tool Status", icon: "🔧", type: "action" });
-    items.push({ id: "config", label: "Config", icon: "⚙️", type: "action" });
-    items.push({ id: "self-update", label: "Update", icon: "⬆️", type: "action" });
-    items.push({ id: "exit", label: "Exit", icon: "🚪", type: "action" });
+    // Section 3: System
+    items.push({ id: "__sep_system__", label: "---", icon: "", type: "separator", sectionTitle: "System" });
+    items.push({ id: "tool-status", label: "Tool Status", icon: "\uD83D\uDD27", type: "action", section: "system" });
+    items.push({ id: "config", label: "Config", icon: "\u2699\uFE0F", type: "action", section: "system" });
+    items.push({ id: "self-update", label: "Update", icon: "\u2B06\uFE0F", type: "action", section: "system" });
+    items.push({ id: "exit", label: "Exit", icon: "\uD83D\uDEAA", type: "action", section: "system" });
 
     return items;
-  }, [hasPins]);
+  }, []);
 }

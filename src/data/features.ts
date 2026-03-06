@@ -2,11 +2,11 @@ import type { Feature } from "./types.js";
 import { supabaseCommands } from "./commands/supabase.js";
 import { ghCommands } from "./commands/gh.js";
 import { vercelCommands } from "./commands/vercel.js";
-import { pulumiCommands } from "./commands/pulumi.js";
+import { gitCommands } from "./commands/git.js";
 
 function pick(ids: string[]) {
   const idSet = new Set(ids);
-  return [...supabaseCommands, ...ghCommands, ...vercelCommands, ...pulumiCommands].filter(
+  return [...supabaseCommands, ...ghCommands, ...vercelCommands, ...gitCommands].filter(
     (cmd) => idSet.has(cmd.id),
   );
 }
@@ -14,7 +14,7 @@ function pick(ids: string[]) {
 export const features: Feature[] = [
   {
     id: "database",
-    icon: "🗄",
+    icon: "🗄️",
     label: "Database",
     commands: pick([
       "supabase:db",
@@ -42,8 +42,8 @@ export const features: Feature[] = [
       "vercel:deploy:prod",
       "vercel:promote",
       "vercel:rollback",
-      "pulumi:up",
-      "pulumi:preview",
+      "git:commit",
+      "git:push",
     ]),
   },
   {
@@ -51,6 +51,17 @@ export const features: Feature[] = [
     icon: "📦",
     label: "Repo",
     commands: pick([
+      "git:status",
+      "git:add",
+      "git:commit",
+      "git:push",
+      "git:pull",
+      "git:branch",
+      "git:checkout",
+      "git:log",
+      "git:diff",
+      "git:merge",
+      "git:stash",
       "gh:repo:clone",
       "gh:repo:create",
       "gh:repo:view",
@@ -60,6 +71,7 @@ export const features: Feature[] = [
       "gh:pr:view",
       "gh:pr:merge",
       "gh:pr:checkout",
+      "gh:pr:review",
       "gh:issue:create",
       "gh:issue:list",
       "gh:issue:view",
@@ -84,8 +96,6 @@ export const features: Feature[] = [
       "gh:run:list",
       "gh:run:view",
       "gh:run:watch",
-      "pulumi:preview",
-      "pulumi:up",
     ]),
   },
   {
@@ -115,27 +125,6 @@ export const features: Feature[] = [
     ]),
   },
   {
-    id: "infrastructure",
-    icon: "🏗",
-    label: "Infrastructure",
-    commands: pick([
-      "pulumi:up",
-      "pulumi:preview",
-      "pulumi:destroy",
-      "pulumi:refresh",
-      "pulumi:stack:ls",
-      "pulumi:stack:select",
-      "pulumi:stack:init",
-      "pulumi:config:set",
-      "pulumi:config:get",
-      "pulumi:config:ls",
-      "pulumi:import",
-      "pulumi:state:delete",
-      "pulumi:edit:config",
-      "pulumi:edit:code",
-    ]),
-  },
-  {
     id: "setup",
     icon: "⚙️",
     label: "Setup",
@@ -147,9 +136,6 @@ export const features: Feature[] = [
       "vercel:login",
       "gh:auth:login",
       "gh:auth:status",
-      "pulumi:login",
-      "pulumi:whoami",
-      "pulumi:new",
     ]),
   },
 ];

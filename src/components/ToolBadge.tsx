@@ -6,14 +6,14 @@ const toolColors: Record<CliToolId, string> = {
   supabase: "#3ECF8E",
   gh: "#58A6FF",
   vercel: "#FFFFFF",
-  pulumi: "#8B5CF6",
+  git: "#F05032",
 };
 
 const toolLabels: Record<CliToolId, string> = {
   supabase: "supabase",
   gh: "github",
   vercel: "vercel",
-  pulumi: "pulumi",
+  git: "git",
 };
 
 interface ToolBadgeProps {

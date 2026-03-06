@@ -43,8 +43,8 @@ export function getToolVersion(toolId: CliToolId): string | undefined {
         return execCapture("gh --version").split("\n")[0]?.replace(/^gh\s+version\s+/i, "").split(" ")[0];
       case "vercel":
         return execCapture("vercel --version").split("\n")[0]?.trim();
-      case "pulumi":
-        return execCapture("pulumi version").replace(/^v/, "");
+      case "git":
+        return execCapture("git --version").replace(/^git version\s+/i, "").trim();
       default:
         return undefined;
     }
@@ -62,7 +62,7 @@ export function getToolInfo(toolId: CliToolId): ToolInfo {
     supabase: "Supabase CLI",
     gh: "GitHub CLI",
     vercel: "Vercel CLI",
-    pulumi: "Pulumi CLI",
+    git: "Git",
   };
 
   const installed = commandExists(toolId === "supabase" ? "supabase" : toolId);

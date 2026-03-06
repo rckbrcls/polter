@@ -12,6 +12,27 @@ interface SidebarProps {
   onHighlight?: (itemId: string) => void;
 }
 
+interface SectionGroup {
+  title: string;
+  items: SidebarItem[];
+}
+
+function groupSections(items: SidebarItem[]): SectionGroup[] {
+  const groups: SectionGroup[] = [];
+  let current: SectionGroup | null = null;
+
+  for (const item of items) {
+    if (item.type === "separator" && item.sectionTitle) {
+      current = { title: item.sectionTitle, items: [] };
+      groups.push(current);
+    } else if (current) {
+      current.items.push(item);
+    }
+  }
+
+  return groups;
+}
+
 export function Sidebar({
   items,
   selectedId,
@@ -26,6 +47,8 @@ export function Sidebar({
   );
   const selectedIdx = selectableItems.findIndex((item) => item.id === selectedId);
   const [cursorIdx, setCursorIdx] = useState(Math.max(0, selectedIdx));
+
+  const sections = useMemo(() => groupSections(items), [items]);
 
   // Sync cursor when selectedId changes externally
   useEffect(() => {
@@ -61,35 +84,50 @@ export function Sidebar({
     { isActive: isFocused },
   );
 
-  let selectableIdx = 0;
+  // Build a flat index counter to map section items to selectableItems indices
+  let flatIdx = 0;
+
   return (
-    <Box flexDirection="column" paddingX={1}>
-      {items.map((item) => {
-        if (item.type === "separator") {
-          return (
-            <Box key={item.id}>
-              <Text dimColor>{symbols.horizontal.repeat(10)}</Text>
-            </Box>
-          );
-        }
+    <Box flexDirection="column" gap={2}>
+      {sections.map((section) => {
+        const sectionStartIdx = flatIdx;
+        const sectionEndIdx = sectionStartIdx + section.items.length - 1;
+        const hasCursorInSection = isFocused && cursorIdx >= sectionStartIdx && cursorIdx <= sectionEndIdx;
+        const hasActiveInSection = section.items.some((item) => item.id === selectedId);
+        const borderColor = hasCursorInSection || hasActiveInSection ? inkColors.accent : "#555555";
 
-        const thisIdx = selectableIdx;
-        selectableIdx++;
-        const isCursor = isFocused && thisIdx === cursorIdx;
-        const isActive = item.id === selectedId;
+        const rendered = (
+          <Box
+            key={section.title}
+            flexDirection="column"
+            borderStyle="round"
+            borderColor={borderColor}
+            paddingX={1}
+          >
+            <Text dimColor bold>{section.title}</Text>
+            {section.items.map((item) => {
+              const thisIdx = flatIdx;
+              flatIdx++;
+              const isCursor = isFocused && thisIdx === cursorIdx;
+              const isActive = item.id === selectedId;
 
-        return (
-          <Box key={item.id} gap={0}>
-            <Text
-              color={isCursor ? inkColors.accent : isActive ? inkColors.accent : undefined}
-              bold={isCursor || isActive}
-              dimColor={!isCursor && !isActive}
-            >
-              {isCursor ? `${symbols.pointerActive} ` : "  "}
-              {item.icon} {item.label}
-            </Text>
+              return (
+                <Box key={item.id} gap={0}>
+                  <Text
+                    color={isCursor ? inkColors.accent : isActive ? inkColors.accent : undefined}
+                    bold={isCursor || isActive}
+                    dimColor={!isCursor && !isActive}
+                  >
+                    {isCursor ? `${symbols.pointerActive} ` : "  "}
+                    {item.icon} {item.label}
+                  </Text>
+                </Box>
+              );
+            })}
           </Box>
         );
+
+        return rendered;
       })}
     </Box>
   );

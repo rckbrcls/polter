@@ -85,6 +85,41 @@ describe("parseCliArgs", () => {
     });
   });
 
+  it("parses mcp install (default scope)", () => {
+    expect(parseCliArgs(["mcp", "install"])).toEqual({
+      mode: "mcp",
+      options: {},
+      mcpAction: "install",
+      mcpScope: "local",
+    });
+  });
+
+  it("parses mcp update --global", () => {
+    expect(parseCliArgs(["mcp", "update", "--global"])).toEqual({
+      mode: "mcp",
+      options: {},
+      mcpAction: "update",
+      mcpScope: "user",
+    });
+  });
+
+  it("parses mcp status", () => {
+    expect(parseCliArgs(["mcp", "status"])).toEqual({
+      mode: "mcp",
+      options: {},
+      mcpAction: "status",
+    });
+  });
+
+  it("parses mcp remove --project", () => {
+    expect(parseCliArgs(["mcp", "remove", "--project"])).toEqual({
+      mode: "mcp",
+      options: {},
+      mcpAction: "remove",
+      mcpScope: "project",
+    });
+  });
+
   it("parses app update version overrides", () => {
     expect(
       parseCliArgs([

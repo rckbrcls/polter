@@ -67,6 +67,18 @@ export const ghCommands: CommandDef[] = [
     label: "pr checkout",
     hint: "Check out a pull request",
   },
+  {
+    id: "gh:pr:review",
+    tool: "gh",
+    base: ["pr", "review"],
+    label: "pr review",
+    hint: "Review a pull request",
+    suggestedArgs: [
+      { value: "approve", label: "Approve", hint: "Approve the PR", args: ["--approve"] },
+      { value: "comment", label: "Comment", hint: "Leave a comment", args: ["--comment"] },
+      { value: "request-changes", label: "Request Changes", hint: "Request changes", args: ["--request-changes"] },
+    ],
+  },
 
   // Issues
   {

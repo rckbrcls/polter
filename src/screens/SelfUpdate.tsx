@@ -13,6 +13,7 @@ interface SelfUpdateProps {
   onBack: () => void;
   onExit: () => void;
   width?: number;
+  height?: number;
   panelMode?: boolean;
   isInputActive?: boolean;
 }
@@ -32,6 +33,7 @@ export function SelfUpdate({
   onBack,
   onExit,
   width = 80,
+  height = 24,
   panelMode = false,
   isInputActive = true,
 }: SelfUpdateProps): React.ReactElement {
@@ -65,26 +67,31 @@ export function SelfUpdate({
   }, [phase, status]);
 
   if (phase === "target") {
+    const targetItems = [
+      { value: "__section__", label: "📦 Update Target", kind: "header" as const, selectable: false },
+      {
+        value: "repository",
+        label: "Current repository",
+        hint: "Pin the latest version in package.json",
+        kind: "action" as const,
+      },
+      {
+        value: "global",
+        label: "Global install",
+        hint: "Update the shared version available in PATH",
+        kind: "action" as const,
+      },
+      ...(!panelMode ? [{ value: "back", label: "← Back to menu" }] : []),
+    ];
+
     return (
-      <Box flexDirection="column">
+      <Box flexDirection="column" paddingX={panelMode ? 1 : 0}>
         <Box marginBottom={1}>
           <Text bold>Choose where to update Polter.</Text>
         </Box>
 
         <SelectList
-          items={[
-            {
-              value: "repository",
-              label: "Current repository",
-              hint: "Pin the latest version in package.json",
-            },
-            {
-              value: "global",
-              label: "Global install",
-              hint: "Update the shared version available in PATH",
-            },
-            { value: "back", label: "← Back to menu" },
-          ]}
+          items={targetItems}
           onSelect={(value) => {
             if (value === "back") {
               onBack();
@@ -96,7 +103,9 @@ export function SelfUpdate({
             setPhase("confirm");
           }}
           onCancel={onBack}
-          width={width}
+          boxedSections={panelMode}
+          width={panelMode ? Math.max(20, width - 4) : width}
+          maxVisible={panelMode ? Math.max(6, height - 6) : undefined}
           isInputActive={isInputActive}
           arrowNavigation={panelMode}
         />
@@ -112,7 +121,7 @@ export function SelfUpdate({
 
   if (phase === "confirm") {
     return (
-      <Box flexDirection="column">
+      <Box flexDirection="column" paddingX={panelMode ? 1 : 0}>
         <ConfirmPrompt
           message={`Run ${updateDisplay}?`}
           defaultValue={true}
@@ -147,8 +156,8 @@ export function SelfUpdate({
 
   if (phase === "running") {
     return (
-      <Box flexDirection="column">
-        <Divider width={width} />
+      <Box flexDirection="column" paddingX={panelMode ? 1 : 0}>
+        <Divider width={panelMode ? width - 4 : width} />
         <Box marginY={1} gap={1}>
           <Text color={inkColors.accent} bold>
             ▶
@@ -156,7 +165,7 @@ export function SelfUpdate({
           <Text dimColor>Running:</Text>
           <Text>{updateDisplay}</Text>
         </Box>
-        <Divider width={width} />
+        <Divider width={panelMode ? width - 4 : width} />
         <Box marginTop={1}>
           <Spinner label="Updating Polter..." />
         </Box>
@@ -165,9 +174,15 @@ export function SelfUpdate({
   }
 
   if (phase === "success") {
+    const successItems = [
+      { value: "__section__", label: "✅ Update Complete", kind: "header" as const, selectable: false },
+      ...(!panelMode ? [{ value: "__back__", label: "← Back to menu", kind: "action" as const }] : []),
+      { value: "__exit__", label: "🚪 Exit Polter", kind: "action" as const },
+    ];
+
     return (
-      <Box flexDirection="column">
-        <Divider width={width} />
+      <Box flexDirection="column" paddingX={panelMode ? 1 : 0}>
+        <Divider width={panelMode ? width - 4 : width} />
         <Box marginY={1} gap={1}>
           <Text color={inkColors.accent} bold>
             ✓
@@ -183,10 +198,7 @@ export function SelfUpdate({
           )}
         </Box>
         <SelectList
-          items={[
-            { value: "__back__", label: "← Back to menu" },
-            { value: "__exit__", label: "🚪 Exit Polter" },
-          ]}
+          items={successItems}
           onSelect={(value) => {
             if (value === "__exit__") {
               onExit();
@@ -196,7 +208,9 @@ export function SelfUpdate({
             onBack();
           }}
           onCancel={onBack}
-          width={width}
+          boxedSections={panelMode}
+          width={panelMode ? Math.max(20, width - 4) : width}
+          maxVisible={panelMode ? Math.max(6, height - 6) : undefined}
           isInputActive={isInputActive}
           arrowNavigation={panelMode}
         />
@@ -204,9 +218,19 @@ export function SelfUpdate({
     );
   }
 
+  const errorItems = [
+    { value: "__section__", label: "🔧 Recovery Options", kind: "header" as const, selectable: false },
+    { value: "retry", label: "🔄 Retry update", kind: "action" as const },
+    ...(repositoryRoot
+      ? [{ value: "target", label: "↔ Choose update target", kind: "action" as const }]
+      : []),
+    ...(!panelMode ? [{ value: "menu", label: "← Return to main menu", kind: "action" as const }] : []),
+    { value: "exit", label: "🚪 Exit Polter", kind: "action" as const },
+  ];
+
   return (
-    <Box flexDirection="column">
-      <Divider width={width} />
+    <Box flexDirection="column" paddingX={panelMode ? 1 : 0}>
+      <Divider width={panelMode ? width - 4 : width} />
 
       {result?.spawnError ? (
         <Box flexDirection="column" marginY={1}>
@@ -251,19 +275,14 @@ export function SelfUpdate({
         )}
       </Box>
 
-      <Box marginTop={1} marginBottom={1}>
-        <Text bold>What would you like to do?</Text>
-      </Box>
+      {!panelMode && (
+        <Box marginTop={1} marginBottom={1}>
+          <Text bold>What would you like to do?</Text>
+        </Box>
+      )}
 
       <SelectList
-        items={[
-          { value: "retry", label: "🔄 Retry update" },
-          ...(repositoryRoot
-            ? [{ value: "target", label: "↔ Choose update target" }]
-            : []),
-          { value: "menu", label: "← Return to main menu" },
-          { value: "exit", label: "🚪 Exit Polter" },
-        ]}
+        items={errorItems}
         onSelect={(value) => {
           switch (value) {
             case "retry":
@@ -283,9 +302,11 @@ export function SelfUpdate({
           }
         }}
         onCancel={onBack}
-        width={width}
+        boxedSections={panelMode}
+        width={panelMode ? Math.max(20, width - 4) : width}
+        maxVisible={panelMode ? Math.max(6, height - 6) : undefined}
         isInputActive={isInputActive}
-          arrowNavigation={panelMode}
+        arrowNavigation={panelMode}
       />
 
       {!panelMode && <StatusBar width={width} />}

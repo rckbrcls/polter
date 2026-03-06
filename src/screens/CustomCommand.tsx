@@ -11,6 +11,7 @@ interface CustomCommandProps {
   onNavigate: (screen: Screen, params?: NavigationParams) => void;
   onBack: () => void;
   width?: number;
+  height?: number;
   panelMode?: boolean;
   isInputActive?: boolean;
 }
@@ -21,6 +22,7 @@ export function CustomCommand({
   onNavigate,
   onBack,
   width = 80,
+  height = 24,
   panelMode = false,
   isInputActive = true,
 }: CustomCommandProps): React.ReactElement {
@@ -28,22 +30,26 @@ export function CustomCommand({
   const [selectedTool, setSelectedTool] = useState<CliToolId>("supabase");
 
   if (phase === "tool-select") {
+    const toolItems = [
+      { value: "__section__", label: "🛠 Select Tool", kind: "header" as const, selectable: false },
+      { value: "supabase", label: "Supabase CLI", hint: "supabase ...", kind: "action" as const },
+      { value: "gh", label: "GitHub CLI", hint: "gh ...", kind: "action" as const },
+      { value: "vercel", label: "Vercel CLI", hint: "vercel ...", kind: "action" as const },
+      { value: "git", label: "Git", hint: "git ...", kind: "action" as const },
+      ...(!panelMode ? [{ value: "__back__", label: "← Back" }] : []),
+    ];
+
     return (
-      <Box flexDirection="column">
+      <Box flexDirection="column" paddingX={panelMode ? 1 : 0}>
         <Box marginBottom={1}>
           <Text bold color={inkColors.accent}>
             ✏️ Custom Command
           </Text>
         </Box>
-        <Text dimColor>Select tool:</Text>
+        {!panelMode && <Text dimColor>Select tool:</Text>}
 
         <SelectList
-          items={[
-            { value: "supabase", label: "Supabase CLI", hint: "supabase ..." },
-            { value: "gh", label: "GitHub CLI", hint: "gh ..." },
-            { value: "vercel", label: "Vercel CLI", hint: "vercel ..." },
-            { value: "__back__", label: "← Back" },
-          ]}
+          items={toolItems}
           onSelect={(value) => {
             if (value === "__back__") {
               onBack();
@@ -53,7 +59,9 @@ export function CustomCommand({
             setPhase("input");
           }}
           onCancel={onBack}
-          width={width}
+          boxedSections={panelMode}
+          width={panelMode ? Math.max(20, width - 4) : width}
+          maxVisible={panelMode ? Math.max(6, height - 6) : undefined}
           isInputActive={isInputActive}
           arrowNavigation={panelMode}
         />
@@ -64,7 +72,7 @@ export function CustomCommand({
   }
 
   return (
-    <Box flexDirection="column">
+    <Box flexDirection="column" paddingX={panelMode ? 1 : 0}>
       <Box marginBottom={1} gap={1}>
         <Text bold color={inkColors.accent}>
           ✏️ Custom Command

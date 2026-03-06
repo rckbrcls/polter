@@ -5,7 +5,7 @@ import { AppClassic } from "./app.js";
 import { AppPanel } from "./appPanel.js";
 import { parseCliArgs, printCliHelp } from "./lib/cliArgs.js";
 import { runAppCli } from "./apps/runAppCli.js";
-import { installMcpServer } from "./lib/mcpInstaller.js";
+import { installMcpServer, removeMcpServer, mcpStatus } from "./lib/mcpInstaller.js";
 import { findPipelineByName } from "./pipeline/storage.js";
 import { executePipeline } from "./pipeline/engine.js";
 import { getCommandById } from "./data/commands/index.js";
@@ -26,8 +26,20 @@ async function main() {
     return;
   }
 
-  if (parsed.mode === "mcp-install") {
-    await installMcpServer(parsed.mcpScope ?? "local");
+  if (parsed.mode === "mcp") {
+    const scope = parsed.mcpScope ?? "local";
+    switch (parsed.mcpAction) {
+      case "install":
+      case "update":
+        await installMcpServer(scope);
+        break;
+      case "remove":
+        await removeMcpServer(scope);
+        break;
+      case "status":
+        await mcpStatus();
+        break;
+    }
     return;
   }
 
@@ -66,7 +78,7 @@ async function main() {
   }
 
   if (parsed.mode === "status") {
-    const tools = ["supabase", "gh", "vercel"] as const;
+    const tools = ["supabase", "gh", "vercel", "git"] as const;
     process.stdout.write(pc.bold("Tool Status\n\n"));
     for (const toolId of tools) {
       const info = getToolInfo(toolId);

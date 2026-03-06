@@ -1,4 +1,4 @@
-export type CliToolId = "supabase" | "gh" | "vercel" | "pulumi";
+export type CliToolId = "supabase" | "gh" | "vercel" | "git";
 
 export interface CommandDef {
   id: string;
@@ -48,7 +48,7 @@ export interface ProjectConfig {
     supabase?: { projectRef?: string };
     vercel?: { projectId?: string; orgId?: string };
     gh?: { repo?: string };
-    pulumi?: { stackName?: string; orgName?: string };
+    git?: {};
   };
   env?: Record<string, string>;
   pipelines: Pipeline[];

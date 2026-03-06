@@ -2,13 +2,13 @@ import type { CommandDef, CliToolId } from "../types.js";
 import { supabaseCommands } from "./supabase.js";
 import { ghCommands } from "./gh.js";
 import { vercelCommands } from "./vercel.js";
-import { pulumiCommands } from "./pulumi.js";
+import { gitCommands } from "./git.js";
 
 export const allCommands: CommandDef[] = [
   ...supabaseCommands,
   ...ghCommands,
   ...vercelCommands,
-  ...pulumiCommands,
+  ...gitCommands,
 ];
 
 const commandById = new Map(allCommands.map((cmd) => [cmd.id, cmd]));
