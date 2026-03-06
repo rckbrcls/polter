@@ -3,7 +3,8 @@ export type AppAction =
   | "link"
   | "migrate"
   | "configure"
-  | "install";
+  | "install"
+  | "update";
 
 export type MigrationAction = "push" | "lint" | "reset" | "local-reset";
 

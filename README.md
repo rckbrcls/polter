@@ -128,11 +128,17 @@ polterbase app configure uru --path .
 polterbase app install uru
 ```
 
+```bash
+polterbase app update uru
+```
+
 `setup uru` installs dependencies, collects Supabase connection data, links the project, pushes migrations, and writes the runtime bootstrap payload used by the desktop app.
 
 `configure uru` refreshes the runtime connection payload without reinstalling the app.
 
 `install uru` is currently macOS-only. By default it resolves the latest GitHub release from `polterware/uru`, accepts `--version <version>` to pin a release, and still supports `--artifact-url` or `POLTERBASE_URU_MACOS_ARTIFACT_URL` as manual overrides.
+
+`update uru` is also macOS-only. It replaces the installed `uru.app` with a newer release while preserving the persisted runtime configuration, local settings, and Supabase session state stored outside the app bundle.
 
 Use `POLTERBASE_URU_GITHUB_REPO=owner/repo` when you need to resolve releases from a fork or a different repository.
 
@@ -276,6 +282,12 @@ Install a specific release:
 
 ```bash
 polterbase app install uru --version 1.0.0
+```
+
+Update an existing installation without re-running runtime configuration:
+
+```bash
+polterbase app update uru
 ```
 
 ### Check Supabase CLI version

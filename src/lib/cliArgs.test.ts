@@ -66,4 +66,25 @@ describe("parseCliArgs", () => {
       },
     });
   });
+
+  it("parses app update version overrides", () => {
+    expect(
+      parseCliArgs([
+        "app",
+        "update",
+        "uru",
+        "--version",
+        "1.2.4",
+        "--yes",
+      ]),
+    ).toEqual({
+      mode: "app",
+      options: {
+        action: "update",
+        app: "uru",
+        version: "1.2.4",
+        yes: true,
+      },
+    });
+  });
 });

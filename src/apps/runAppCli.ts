@@ -7,7 +7,7 @@ function assertAppCommand(options: ParsedCliOptions): asserts options is ParsedC
   app: string;
 } {
   if (!options.action || !options.app) {
-    throw new Error("Usage: polterbase app <setup|link|migrate|configure|install> <app>");
+    throw new Error("Usage: polterbase app <setup|link|migrate|configure|install|update> <app>");
   }
 }
 

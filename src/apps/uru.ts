@@ -435,7 +435,16 @@ async function findFirstAppBundle(dir: string): Promise<string | undefined> {
   return undefined;
 }
 
-async function installMacosApp(context: AppExecutionContext): Promise<number> {
+interface DeployMacosAppOptions {
+  mode: "install" | "update";
+  configureAfterCopy: boolean;
+  requireExistingInstallation: boolean;
+}
+
+async function deployMacosApp(
+  context: AppExecutionContext,
+  options: DeployMacosAppOptions,
+): Promise<number> {
   const artifact = await resolveUruMacosArtifact(context.options);
 
   const tempRoot = await mkdtemp(join(tmpdir(), "polterbase-uru-"));
@@ -472,6 +481,12 @@ async function installMacosApp(context: AppExecutionContext): Promise<number> {
   mkdirSync(installDir, { recursive: true });
   const destination = join(installDir, "uru.app");
 
+  if (options.requireExistingInstallation && !existsSync(destination)) {
+    throw new Error(
+      `No existing Uru installation was found at ${destination}. Run \`polterbase app install uru\` first.`,
+    );
+  }
+
   if (existsSync(destination)) {
     const confirmed =
       context.options.yes ||
@@ -491,9 +506,17 @@ async function installMacosApp(context: AppExecutionContext): Promise<number> {
     process.cwd(),
     "App copy failed.",
   );
-  process.stdout.write(`${pc.green(`Installed Uru to ${destination}`)}\n`);
+  process.stdout.write(
+    `${pc.green(`${options.mode === "install" ? "Installed" : "Updated"} Uru at ${destination}`)}\n`,
+  );
 
-  await runConfigure(context);
+  if (options.configureAfterCopy) {
+    await runConfigure(context);
+  } else {
+    process.stdout.write(
+      `${pc.dim("Preserved existing runtime configuration and local app state.")}\n`,
+    );
+  }
 
   const shouldOpen =
     context.options.yes || (await promptConfirm("Open Uru now?", true));
@@ -502,6 +525,22 @@ async function installMacosApp(context: AppExecutionContext): Promise<number> {
   }
 
   return 0;
+}
+
+async function installMacosApp(context: AppExecutionContext): Promise<number> {
+  return deployMacosApp(context, {
+    mode: "install",
+    configureAfterCopy: true,
+    requireExistingInstallation: false,
+  });
+}
+
+async function updateMacosApp(context: AppExecutionContext): Promise<number> {
+  return deployMacosApp(context, {
+    mode: "update",
+    configureAfterCopy: false,
+    requireExistingInstallation: true,
+  });
 }
 
 export const uruProfile: AppProfile = {
@@ -532,6 +571,8 @@ export const uruProfile: AppProfile = {
         return runConfigure(context);
       case "install":
         return installMacosApp(context);
+      case "update":
+        return updateMacosApp(context);
       case "migrate":
         return runMigration(
           context,
