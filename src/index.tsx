@@ -170,12 +170,15 @@ async function main() {
       process.exit(result.exitCode ?? 0);
     }
     const AppComponent = parsed.classic ? AppClassic : AppPanel;
-    render(React.createElement(AppComponent));
-    return;
+    const inst = render(React.createElement(AppComponent));
+    await inst.waitUntilExit();
+    process.exit(0);
   }
 
   const AppComponent = parsed.classic ? AppClassic : AppPanel;
-  render(React.createElement(AppComponent));
+  const instance = render(React.createElement(AppComponent));
+  await instance.waitUntilExit();
+  process.exit(0);
 }
 
 main().catch((error) => {
