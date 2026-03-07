@@ -17,6 +17,8 @@ import { getToolInfo } from "./lib/toolResolver.js";
 import { openInEditor } from "./lib/editor.js";
 import { getProjectConfigPath, getOrCreateProjectConfig, writeProjectConfig } from "./config/projectConfig.js";
 import pc from "picocolors";
+import { getSocketPath } from "./lib/processManager.js";
+import { createIpcServer } from "./lib/ipcServer.js";
 
 async function main() {
   const parsed = parseCliArgs(process.argv.slice(2));
@@ -170,14 +172,22 @@ async function main() {
       process.exit(result.exitCode ?? 0);
     }
     const AppComponent = parsed.classic ? AppClassic : AppPanel;
+    const socketPath = getSocketPath();
+    const ipc = socketPath ? createIpcServer(socketPath) : null;
+    if (ipc) await ipc.start();
     const inst = render(React.createElement(AppComponent));
     await inst.waitUntilExit();
+    if (ipc) await ipc.stop();
     process.exit(0);
   }
 
   const AppComponent = parsed.classic ? AppClassic : AppPanel;
+  const socketPath = getSocketPath();
+  const ipc = socketPath ? createIpcServer(socketPath) : null;
+  if (ipc) await ipc.start();
   const instance = render(React.createElement(AppComponent));
   await instance.waitUntilExit();
+  if (ipc) await ipc.stop();
   process.exit(0);
 }
 

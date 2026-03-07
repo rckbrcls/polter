@@ -108,6 +108,7 @@ export function runCommand(
     cwd,
     env: resolvedExecution.env,
     shell: true,
+    detached: true,
     stdio: [options?.quiet ? "pipe" : "inherit", "pipe", "pipe"],
   });
 
@@ -147,7 +148,11 @@ export function runCommand(
 
   return {
     promise,
-    abort: () => child.kill("SIGTERM"),
+    abort: () => {
+      if (child.pid) {
+        try { process.kill(-child.pid, "SIGTERM"); } catch { /* already gone */ }
+      }
+    },
   };
 }
 

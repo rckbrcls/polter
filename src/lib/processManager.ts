@@ -1,4 +1,6 @@
 import { spawn, type ChildProcess } from "node:child_process";
+import { join } from "node:path";
+import { findNearestPackageRoot } from "./packageRoot.js";
 
 // --- Types ---
 
@@ -309,6 +311,12 @@ export function _resetForTests(): void {
     }
   }
   registry.clear();
+}
+
+export function getSocketPath(cwd?: string): string | undefined {
+  const root = findNearestPackageRoot(cwd);
+  if (!root) return undefined;
+  return join(root, ".polter", "polter.sock");
 }
 
 export { createRingBuffer, appendToBuffer, tailBuffer, type RingBuffer };

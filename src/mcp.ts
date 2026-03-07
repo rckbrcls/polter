@@ -36,8 +36,29 @@ import {
 } from "./api.js";
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
+import { createIpcClient } from "./lib/ipcClient.js";
+import { getSocketPath } from "./lib/processManager.js";
 
 const TOOL_IDS: CliToolId[] = ["supabase", "gh", "vercel", "git", "pkg"];
+
+async function withTuiConnection<T>(
+  method: string,
+  params: Record<string, unknown>,
+  fallback: () => T | Promise<T>,
+): Promise<T> {
+  const socketPath = getSocketPath();
+  if (!socketPath) return fallback();
+
+  try {
+    const client = createIpcClient(socketPath);
+    await client.connect();
+    const result = await client.call(method, params);
+    client.disconnect();
+    return result as T;
+  } catch {
+    return fallback();
+  }
+}
 
 const server = new McpServer({
   name: "polter",
@@ -429,23 +450,41 @@ server.tool(
     const mgr = detectPkgManager(cwd);
     try {
       const translated = translateCommand(["run", script, ...(extraArgs ?? [])], mgr.id);
-      const existing = findRunningByCommand(cwd, mgr.command, translated.args);
+      const existing = await withTuiConnection<ReturnType<typeof findRunningByCommand>>(
+        "ps.find_running",
+        { cwd, command: mgr.command, args: translated.args },
+        () => findRunningByCommand(cwd, mgr.command, translated.args),
+      );
       if (existing) {
+        const output = await withTuiConnection(
+          "ps.logs",
+          { id: existing.id, tail: 20 },
+          () => getProcessOutput(existing.id, 20),
+        );
         return {
           content: [{
             type: "text" as const,
             text: JSON.stringify({
               alreadyRunning: true,
               process: existing,
-              output: getProcessOutput(existing.id, 20),
+              output,
             }, null, 2),
           }],
         };
       }
 
       const id = generateProcessId(mgr.command, translated.args);
-      const info = startProcess(id, mgr.command, translated.args, cwd);
+      const info = await withTuiConnection(
+        "ps.start",
+        { command: mgr.command, args: translated.args, cwd, id },
+        () => startProcess(id, mgr.command, translated.args, cwd),
+      );
       await new Promise((r) => setTimeout(r, 500));
+      const output = await withTuiConnection(
+        "ps.logs",
+        { id, tail: 20 },
+        () => getProcessOutput(id, 20),
+      );
 
       return {
         content: [{
@@ -453,7 +492,7 @@ server.tool(
           text: JSON.stringify({
             success: true,
             process: info,
-            output: getProcessOutput(id, 20),
+            output,
             packageManager: mgr.id,
           }, null, 2),
         }],
@@ -601,7 +640,7 @@ server.tool(
   "List all tracked background processes with their status, PID, uptime, and exit info.",
   {},
   async () => {
-    const processes = listProcesses();
+    const processes = await withTuiConnection("ps.list", {}, () => listProcesses());
     return {
       content: [{ type: "text" as const, text: JSON.stringify(processes, null, 2) }],
     };
@@ -623,7 +662,11 @@ server.tool(
     const processCwd = cwd ?? process.cwd();
 
     try {
-      const info = startProcess(processId, command, processArgs, processCwd);
+      const info = await withTuiConnection(
+        "ps.start",
+        { command, args: processArgs, cwd: processCwd, id: processId },
+        () => startProcess(processId, command, processArgs, processCwd),
+      );
       return {
         content: [{ type: "text" as const, text: JSON.stringify({ success: true, process: info }, null, 2) }],
       };
@@ -646,7 +689,11 @@ server.tool(
   },
   async ({ id, tail, stream }) => {
     try {
-      const output = getProcessOutput(id, tail, stream);
+      const output = await withTuiConnection(
+        "ps.logs",
+        { id, ...(tail !== undefined ? { tail } : {}), ...(stream !== undefined ? { stream } : {}) },
+        () => getProcessOutput(id, tail, stream),
+      );
       return {
         content: [{ type: "text" as const, text: JSON.stringify(output, null, 2) }],
       };
@@ -667,7 +714,11 @@ server.tool(
   },
   async ({ id }) => {
     try {
-      const info = await stopProcess(id);
+      const info = await withTuiConnection(
+        "ps.stop",
+        { id },
+        () => stopProcess(id),
+      );
       return {
         content: [{ type: "text" as const, text: JSON.stringify({ success: true, process: info }, null, 2) }],
       };
@@ -719,15 +770,24 @@ server.tool(
     const mgr = detectPkgManager(cwd);
     const runArgs = ["run", script];
 
-    const existing = findRunningByCommand(cwd, mgr.command, runArgs);
+    const existing = await withTuiConnection<ReturnType<typeof findRunningByCommand>>(
+      "ps.find_running",
+      { cwd, command: mgr.command, args: runArgs },
+      () => findRunningByCommand(cwd, mgr.command, runArgs),
+    );
     if (existing) {
+      const output = await withTuiConnection(
+        "ps.logs",
+        { id: existing.id, tail },
+        () => getProcessOutput(existing.id, tail),
+      );
       return {
         content: [{
           type: "text" as const,
           text: JSON.stringify({
             alreadyRunning: true,
             process: existing,
-            output: getProcessOutput(existing.id, tail),
+            output,
           }, null, 2),
         }],
       };
@@ -735,15 +795,24 @@ server.tool(
 
     try {
       const id = generateProcessId(mgr.command, runArgs);
-      const info = startProcess(id, mgr.command, runArgs, cwd);
+      const info = await withTuiConnection(
+        "ps.start",
+        { command: mgr.command, args: runArgs, cwd, id },
+        () => startProcess(id, mgr.command, runArgs, cwd),
+      );
       await new Promise((r) => setTimeout(r, 500));
+      const output = await withTuiConnection(
+        "ps.logs",
+        { id, tail },
+        () => getProcessOutput(id, tail),
+      );
       return {
         content: [{
           type: "text" as const,
           text: JSON.stringify({
             alreadyRunning: false,
             process: info,
-            output: getProcessOutput(id, tail),
+            output,
             packageManager: mgr.id,
           }, null, 2),
         }],
@@ -768,22 +837,33 @@ server.tool(
   },
   async ({ cwd: cwdArg, filter, tail }) => {
     const cwd = cwdArg ?? process.cwd();
-    let processes = findProcessesByCwd(cwd);
+    const processes = await withTuiConnection<ReturnType<typeof findProcessesByCwd>>(
+      "ps.find_by_cwd",
+      { cwd, ...(filter ? { filter } : {}) },
+      () => {
+        let procs = findProcessesByCwd(cwd);
+        if (filter) {
+          const f = filter.toLowerCase();
+          procs = procs.filter((proc) =>
+            (proc.command + " " + proc.args.join(" ")).toLowerCase().includes(f),
+          );
+        }
+        return procs;
+      },
+    );
 
-    if (filter) {
-      const f = filter.toLowerCase();
-      processes = processes.filter((proc) =>
-        (proc.command + " " + proc.args.join(" ")).toLowerCase().includes(f),
+    const results = [];
+    for (const proc of processes) {
+      const output = await withTuiConnection(
+        "ps.logs",
+        { id: proc.id, tail },
+        () => getProcessOutput(proc.id, tail),
       );
+      results.push({ process: proc, output });
     }
 
-    const result = processes.map((proc) => ({
-      process: proc,
-      output: getProcessOutput(proc.id, tail),
-    }));
-
     return {
-      content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }],
+      content: [{ type: "text" as const, text: JSON.stringify(results, null, 2) }],
     };
   },
 );

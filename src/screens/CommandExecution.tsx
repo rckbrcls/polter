@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { Box, Text, useInput } from "ink";
-import { Spinner } from "../components/Spinner.js";
 import { SelectList, type SelectItem } from "../components/SelectList.js";
 import { ConfirmPrompt } from "../components/ConfirmPrompt.js";
 import { ToolBadge } from "../components/ToolBadge.js";
 import { Divider } from "../components/Divider.js";
 import { StatusBar } from "../components/StatusBar.js";
-import { CommandOutput } from "../components/CommandOutput.js";
+import { ScrollableBox } from "../components/ScrollableBox.js";
 import { useCommand } from "../hooks/useCommand.js";
 import { useInteractiveRun } from "../hooks/useInteractiveRun.js";
 import { isPinnedRun, togglePinnedRun } from "../data/pins.js";
-import { openInBrowser, copyToClipboard } from "../lib/clipboard.js";
+import { copyToClipboard } from "../lib/clipboard.js";
 import { parseErrorSuggestions } from "../lib/errorSuggestions.js";
+import { stripAnsi } from "../lib/ansi.js";
 import { inkColors, panel } from "../theme.js";
 import { getToolDisplayName, resolveToolCommand } from "../lib/toolResolver.js";
 import { startProcess, generateProcessId } from "../lib/processManager.js";
@@ -65,6 +65,8 @@ export function CommandExecution({
 
   const [outputFocused, setOutputFocused] = useState(false);
   const [copyMessage, setCopyMessage] = useState<string>();
+  const [feedback, setFeedback] = useState<string>();
+  const [aborting, setAborting] = useState(false);
 
   const cmdDisplay = rawCommand
     ? `${rawCommand} ${currentArgs.join(" ")}`.trim()
@@ -72,25 +74,34 @@ export function CommandExecution({
   const runCommand = currentArgs.join(" ");
 
   useInput(
-    (_input, key) => {
+    (input, key) => {
       if (key.escape) {
         abort();
         onBack();
+        return;
+      }
+      if (input === "x" && !aborting) {
+        abort();
+        setAborting(true);
+        setFeedback("Aborting...");
+        return;
+      }
+      if (input === "c") {
+        const output = [partialStdout, partialStderr].filter(Boolean).join("\n");
+        copyToClipboard(output).then(() => setFeedback("Copied to clipboard"));
+        return;
       }
     },
     { isActive: isInputActive && phase === "running" },
   );
 
   useInput(
-    (input, key) => {
-      if (input === "o" && !outputFocused) {
-        setOutputFocused(true);
-      }
-      if (key.escape && outputFocused) {
-        setOutputFocused(false);
+    (input, _key) => {
+      if (input === "/") {
+        setOutputFocused((prev) => !prev);
       }
     },
-    { isActive: isInputActive && phase === "error-menu" },
+    { isActive: isInputActive && (phase === "error-menu" || phase === "success") },
   );
 
   useEffect(() => {
@@ -127,6 +138,13 @@ export function CommandExecution({
       setPhase("error-menu");
     }
   }, [phase, runCommand, status]);
+
+  useEffect(() => {
+    if (feedback) {
+      const timer = setTimeout(() => setFeedback(undefined), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [feedback]);
 
   if (phase === "confirm") {
     const pinned = isPinnedRun(runCommand);
@@ -239,37 +257,58 @@ export function CommandExecution({
   }
 
   if (phase === "running") {
-    const hasPartialOutput = partialStdout.length > 0 || partialStderr.length > 0;
-    // Reserve lines for: divider(1) + header(1) + margins(2) + divider(1) + spinner(1) + esc hint(1) + padding
-    const streamOutputHeight = Math.max(3, height - 10);
+    const outputText = [partialStdout, partialStderr].filter(Boolean).join("\n");
+    const outputLines = outputText
+      ? stripAnsi(outputText).split("\n")
+      : [];
+    // Header (1) + gap (1) + border (2) + feedback (1) + footer gap (1) + footer (1) = 7
+    const logBoxHeight = Math.max(3, height - 7);
+    const cardWidth = Math.max(30, (panelMode ? width - 4 : width) - 2);
 
     return (
       <Box flexDirection="column" paddingX={panelMode ? 1 : 0}>
-        <Divider width={panelMode ? width - 4 : width} />
-        <Box marginY={1} gap={1}>
-          <Text color={inkColors.accent} bold>
-            {"▶"}
-          </Text>
-          <Text dimColor>Running:</Text>
-          <Text>{cmdDisplay}</Text>
+        {/* Header */}
+        <Box marginBottom={1} gap={1}>
+          <Text color={inkColors.accent} bold>{"▶"} {cmdDisplay}</Text>
           <ToolBadge tool={tool} />
+          <Text color={aborting ? "yellow" : "green"}>● {aborting ? "aborting" : "running"}</Text>
         </Box>
-        <Divider width={panelMode ? width - 4 : width} />
-        <Box marginTop={1}>
-          <Spinner label={`Executing ${cmdDisplay}...`} />
+
+        {/* Output box */}
+        <Box
+          flexDirection="column"
+          borderStyle="round"
+          borderColor={inkColors.accent}
+          paddingX={1}
+          width={cardWidth}
+        >
+          <ScrollableBox
+            height={logBoxHeight}
+            isActive={isInputActive}
+            autoScrollToBottom
+          >
+            {outputLines.length === 0
+              ? [<Text key="empty" dimColor>Waiting for output...</Text>]
+              : outputLines.map((line, i) => (
+                  <Text key={i} wrap="truncate">{line}</Text>
+                ))
+            }
+          </ScrollableBox>
         </Box>
-        {hasPartialOutput && (
-          <CommandOutput
-            stdout={partialStdout}
-            stderr={partialStderr}
-            height={streamOutputHeight}
-            isActive={false}
-          />
+
+        {/* Feedback */}
+        {feedback && (
+          <Box>
+            <Text color={inkColors.accent}>{feedback}</Text>
+          </Box>
         )}
-        <Box marginTop={1}>
-          <Text dimColor>Press </Text>
-          <Text color={inkColors.accent}>Esc</Text>
-          <Text dimColor> to abort</Text>
+
+        {/* Footer */}
+        <Box marginTop={1} gap={2}>
+          <Text dimColor>↑↓:scroll</Text>
+          <Text dimColor>x:abort</Text>
+          <Text dimColor>c:copy</Text>
+          <Text dimColor>Esc:back</Text>
         </Box>
       </Box>
     );
@@ -311,19 +350,19 @@ export function CommandExecution({
       { value: "__back__", label: "\u2190 Back to menu" },
     ];
 
-    // Reserve lines for: divider(1) + success msg(1) + margins(2) + pin msg(1?) + back item box(~5)
-    const outputHeight = Math.max(3, height - 12);
+    const successOutput = [result?.stdout, result?.stderr].filter(Boolean).join("\n");
+    const successLines = successOutput ? stripAnsi(successOutput).split("\n") : [];
+    // Header (1) + gap (1) + border (2) + pin msg (1?) + select (~3) + footer (1) = ~9
+    const successLogHeight = Math.max(3, height - 9 - (pinMessage ? 1 : 0));
+    const successCardWidth = Math.max(30, (panelMode ? width - 4 : width) - 2);
 
     return (
       <Box flexDirection="column" paddingX={panelMode ? 1 : 0}>
-        <Divider width={panelMode ? width - 4 : width} />
-        <Box marginY={1} gap={1}>
-          <Text color={inkColors.accent} bold>
-            {"✓"}
-          </Text>
-          <Text color={inkColors.accent} bold>
-            Command completed successfully!
-          </Text>
+        {/* Header */}
+        <Box marginBottom={1} gap={1}>
+          <Text color={inkColors.accent} bold>{"✓"} {cmdDisplay}</Text>
+          <ToolBadge tool={tool} />
+          <Text color="green">● completed</Text>
         </Box>
 
         {pinMessage && (
@@ -332,12 +371,34 @@ export function CommandExecution({
           </Box>
         )}
 
-        <CommandOutput
-          stdout={result?.stdout}
-          stderr={result?.stderr}
-          height={outputHeight}
-          isActive={isInputActive}
-        />
+        {/* Output box */}
+        <Box
+          flexDirection="column"
+          borderStyle="round"
+          borderColor={outputFocused ? inkColors.accent : panel.borderDim}
+          paddingX={1}
+          width={successCardWidth}
+        >
+          <ScrollableBox
+            height={successLogHeight}
+            isActive={isInputActive && outputFocused}
+            autoScrollToBottom
+          >
+            {successLines.length === 0
+              ? [<Text key="empty" dimColor>No output</Text>]
+              : successLines.map((line, i) => (
+                  <Text key={i} wrap="truncate">{line}</Text>
+                ))
+            }
+          </ScrollableBox>
+        </Box>
+
+        {/* Footer hints */}
+        <Box marginTop={1} gap={2}>
+          <Text dimColor>/:{outputFocused ? "menu" : "scroll"}</Text>
+          {outputFocused && <Text dimColor>↑↓:scroll</Text>}
+          <Text dimColor>Esc:back</Text>
+        </Box>
 
         <SelectList
           items={successItems}
@@ -345,10 +406,10 @@ export function CommandExecution({
           onCancel={onHome ?? onBack}
           width={panelMode ? Math.max(20, width - 4) : width}
           maxVisible={panelMode ? Math.max(6, height - 6) : undefined}
-          isInputActive={isInputActive}
+          isInputActive={isInputActive && !outputFocused}
           arrowNavigation={panelMode}
           boxedSections={panelMode}
-          panelFocused={isInputActive}
+          panelFocused={isInputActive && !outputFocused}
         />
       </Box>
     );
@@ -423,87 +484,78 @@ export function CommandExecution({
     label: "\u2190 Back to menu",
   });
 
+  const errorOutput = [result?.stdout, result?.stderr].filter(Boolean).join("\n");
+  const errorLines = errorOutput ? stripAnsi(errorOutput).split("\n") : [];
+  // Header (1) + gap (1) + border (2) + spawnError extra (~3) + copyMessage (1?) + selectList (~errorItems) + footer
+  const errorLogHeight = Math.max(3, height - 8 - Math.min(errorItems.length, 6) - (copyMessage ? 1 : 0));
+  const errorCardWidth = Math.max(30, (panelMode ? width - 4 : width) - 2);
+
+  const errorStatusLabel = result?.spawnError
+    ? "spawn error"
+    : `exit ${result?.exitCode}`;
+
   return (
     <Box flexDirection="column" paddingX={panelMode ? 1 : 0}>
-      <Divider width={panelMode ? width - 4 : width} />
+      {/* Header */}
+      <Box marginBottom={1} gap={1}>
+        <Text color="red" bold>{"✗"} {cmdDisplay}</Text>
+        <ToolBadge tool={tool} />
+        <Text color="red">● {errorStatusLabel}</Text>
+      </Box>
 
-      {result?.spawnError ? (
-        <Box flexDirection="column" marginY={1}>
-          <Box gap={1}>
-            <Text color="red" bold>
-              {"✗"}
-            </Text>
-            <Text color="red" bold>
-              Failed to start command
-            </Text>
-          </Box>
-          <Box marginLeft={2} marginTop={1}>
-            <Text dimColor>Error: </Text>
-            <Text color="red">{result.spawnError}</Text>
-          </Box>
+      {result?.spawnError && (
+        <Box marginBottom={1}>
+          <Text dimColor>Error: </Text>
+          <Text color="red">{result.spawnError}</Text>
           {(result.spawnError.includes("ENOENT") ||
             result.spawnError.includes("not found")) && (
-              <Box flexDirection="column" marginLeft={2} marginTop={1}>
-                <Text color={inkColors.accent} bold>
-                  {"\uD83D\uDCA1"} {tool} CLI not found in this repository or PATH
-                </Text>
-              </Box>
-            )}
-        </Box>
-      ) : (
-        <Box flexDirection="column" marginY={1}>
-          <Box gap={1}>
-            <Text color="red" bold>
-              {"✗"}
-            </Text>
-            <Text color="red">Command failed </Text>
-            <Text dimColor>(exit code </Text>
-            <Text color="red" bold>
-              {String(result?.exitCode)}
-            </Text>
-            <Text dimColor>)</Text>
-          </Box>
-          <Box marginLeft={2} marginTop={1}>
-            <Text dimColor>Command: </Text>
-            <Text>{cmdDisplay}</Text>
-          </Box>
-          {!hasDebug && (
-            <Box marginLeft={2} marginTop={1} gap={1}>
-              <Text dimColor>{"\uD83D\uDCA1"} Tip: retry with</Text>
-              <Text color={inkColors.accent}>--debug</Text>
-              <Text dimColor>to see detailed logs</Text>
-            </Box>
+            <Text color={inkColors.accent}> — {tool} CLI not found in this repository or PATH</Text>
           )}
         </Box>
       )}
 
-      <CommandOutput
-        stdout={result?.stdout}
-        stderr={result?.stderr}
-        height={Math.max(3, height - 14 - errorItems.length - (suggestions.length > 0 ? suggestions.length + 4 : 0) - (copyMessage ? 1 : 0))}
-        isActive={isInputActive && outputFocused}
-      />
+      {!result?.spawnError && !hasDebug && (
+        <Box marginBottom={1} gap={1}>
+          <Text dimColor>💡 Tip: retry with</Text>
+          <Text color={inkColors.accent}>--debug</Text>
+          <Text dimColor>to see detailed logs</Text>
+        </Box>
+      )}
+
+      {/* Output box */}
+      <Box
+        flexDirection="column"
+        borderStyle="round"
+        borderColor={outputFocused ? "red" : panel.borderDim}
+        paddingX={1}
+        width={errorCardWidth}
+      >
+        <ScrollableBox
+          height={errorLogHeight}
+          isActive={isInputActive && outputFocused}
+          autoScrollToBottom
+        >
+          {errorLines.length === 0
+            ? [<Text key="empty" dimColor>No output</Text>]
+            : errorLines.map((line, i) => (
+                <Text key={i} wrap="truncate">{line}</Text>
+              ))
+          }
+        </ScrollableBox>
+      </Box>
 
       {copyMessage && (
-        <Box marginTop={1}>
+        <Box>
           <Text color={inkColors.accent}>{copyMessage}</Text>
         </Box>
       )}
 
-      {outputFocused ? (
-        <Box marginTop={1}>
-          <Text dimColor>j/k scroll · </Text>
-          <Text color={inkColors.accent}>Esc</Text>
-          <Text dimColor> back to menu</Text>
-        </Box>
-      ) : (
-        <Box marginTop={1} marginBottom={1}>
-          <Text bold>What would you like to do?</Text>
-          <Text dimColor>  (press </Text>
-          <Text color={inkColors.accent}>o</Text>
-          <Text dimColor> to scroll output)</Text>
-        </Box>
-      )}
+      {/* Footer hints */}
+      <Box marginTop={1} gap={2}>
+        <Text dimColor>/:{outputFocused ? "menu" : "scroll"}</Text>
+        {outputFocused && <Text dimColor>↑↓:scroll</Text>}
+        <Text dimColor>Esc:back</Text>
+      </Box>
 
       <SelectList
         items={errorItems}
@@ -527,6 +579,8 @@ export function CommandExecution({
             case "retry":
               setPinMessage(undefined);
               setCopyMessage(undefined);
+              setAborting(false);
+              setFeedback(undefined);
               reset();
               setPhase("running");
               break;
@@ -535,6 +589,8 @@ export function CommandExecution({
               setCurrentArgs(newArgs);
               setPinMessage(undefined);
               setCopyMessage(undefined);
+              setAborting(false);
+              setFeedback(undefined);
               reset();
               setPhase("running");
               break;

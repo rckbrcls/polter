@@ -20,6 +20,9 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# Polter runtime state
+.polter/
+
 # OS / Editor
 .DS_Store
 Thumbs.db

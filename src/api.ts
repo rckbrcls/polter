@@ -11,7 +11,11 @@ export { resolveToolCommand, getToolInfo, getToolDisplayName, type ToolInfo } fr
 export { detectPkgManager, translateCommand, resolvePkgArgs, type PkgManagerId, type PkgManagerInfo } from "./lib/pkgManager.js";
 
 // Process Manager
-export { startProcess, stopProcess, listProcesses, getProcessOutput, isProcessRunning, removeProcess, generateProcessId, findProcessesByCwd, findRunningByCommand, type ProcessInfo, type ProcessOutput } from "./lib/processManager.js";
+export { startProcess, stopProcess, listProcesses, getProcessOutput, isProcessRunning, removeProcess, generateProcessId, findProcessesByCwd, findRunningByCommand, getSocketPath, type ProcessInfo, type ProcessOutput } from "./lib/processManager.js";
+
+// IPC
+export { createIpcServer, type IpcServer } from "./lib/ipcServer.js";
+export { createIpcClient, type IpcClient } from "./lib/ipcClient.js";
 
 // Pipelines
 export { executePipeline, type StepResult, type PipelineProgress } from "./pipeline/engine.js";
