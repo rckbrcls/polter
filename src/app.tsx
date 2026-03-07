@@ -15,6 +15,12 @@ import { ProjectConfig } from "./screens/ProjectConfig.js";
 import { PipelineList } from "./screens/PipelineList.js";
 import { PipelineBuilder } from "./screens/PipelineBuilder.js";
 import { PipelineExecution } from "./screens/PipelineExecution.js";
+import { McpManage } from "./screens/McpManage.js";
+import { ProcessList } from "./screens/ProcessList.js";
+import { ProcessLogs } from "./screens/ProcessLogs.js";
+import { DeclarativePlan } from "./screens/DeclarativePlan.js";
+import { DeclarativeStatus } from "./screens/DeclarativeStatus.js";
+import { InitScaffold } from "./screens/InitScaffold.js";
 import { colors } from "./theme.js";
 
 export function AppClassic(): React.ReactElement {
@@ -84,7 +90,16 @@ export function AppClassic(): React.ReactElement {
         return <SelfUpdate onBack={goBack} onExit={handleExit} width={width} />;
 
       case "tool-status":
-        return <ToolStatus onBack={goBack} width={width} />;
+        return <ToolStatus onBack={goBack} onNavigate={navigate} width={width} />;
+
+      case "mcp-manage":
+        return <McpManage onBack={goBack} width={width} />;
+
+      case "process-list":
+        return <ProcessList onNavigate={navigate} onBack={goBack} width={width} height={height} />;
+
+      case "process-logs":
+        return <ProcessLogs processId={params.processId ?? ""} onBack={goBack} width={width} height={height} />;
 
       case "project-config":
         return <ProjectConfig onBack={goBack} width={width} />;
@@ -104,6 +119,15 @@ export function AppClassic(): React.ReactElement {
             width={width}
           />
         );
+
+      case "declarative-plan":
+        return <DeclarativePlan onBack={goBack} onNavigate={navigate} width={width} height={height} />;
+
+      case "declarative-status":
+        return <DeclarativeStatus onBack={goBack} width={width} height={height} />;
+
+      case "init-scaffold":
+        return <InitScaffold onBack={goBack} onNavigate={navigate} width={width} height={height} />;
 
       default:
         return (

@@ -25,7 +25,7 @@ export async function applyActions(
       { command: resolved.command, env: resolved.env },
       action.args,
       cwd,
-    );
+    ).promise;
 
     const success = !result.spawnError && result.exitCode === 0;
     results.push({ action, success, result });

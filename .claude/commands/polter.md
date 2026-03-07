@@ -1,6 +1,6 @@
 # Polter - Infrastructure Orchestrator
 
-Polter orchestrates 4 CLI tools (Supabase, GitHub CLI, Vercel, Pulumi) with 139+ commands, multi-step pipelines, and declarative state management via `polter.yaml`.
+Polter orchestrates CLI tools (Supabase, GitHub CLI, Vercel, and your package manager) with 139+ commands, multi-step pipelines, and declarative state management via `polter.yaml`.
 
 ## Available MCP Tools
 
@@ -8,7 +8,7 @@ You have access to `polter_*` tools via the Polter MCP server. Use them to manag
 
 ### Discovery
 
-- **`polter_list_commands`** - Browse all available commands. Use `tool` param to filter by `supabase`, `gh`, `vercel`, or `pulumi`. Start here when you need to find the right command.
+- **`polter_list_commands`** - Browse all available commands. Use `tool` param to filter by `supabase`, `gh`, `vercel`, or `pkg`. Start here when you need to find the right command.
 - **`polter_status`** - Check which CLIs are installed, their versions, and whether the project is linked to Supabase/Vercel/GitHub.
 
 ### Execution
@@ -53,7 +53,7 @@ Command IDs follow the pattern `tool:subcommand:action`, e.g.:
 - `supabase:db:push`, `supabase:functions:deploy`
 - `gh:pr:create`, `gh:issue:list`
 - `vercel:deploy`, `vercel:env:add`
-- `pulumi:up`, `pulumi:preview`
+- `pkg:build`, `pkg:install`
 
 Use `polter_list_commands` to discover exact IDs and their accepted arguments.
 

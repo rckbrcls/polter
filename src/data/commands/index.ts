@@ -3,12 +3,14 @@ import { supabaseCommands } from "./supabase.js";
 import { ghCommands } from "./gh.js";
 import { vercelCommands } from "./vercel.js";
 import { gitCommands } from "./git.js";
+import { pkgCommands } from "./pkg.js";
 
 export const allCommands: CommandDef[] = [
   ...supabaseCommands,
   ...ghCommands,
   ...vercelCommands,
   ...gitCommands,
+  ...pkgCommands,
 ];
 
 const commandById = new Map(allCommands.map((cmd) => [cmd.id, cmd]));

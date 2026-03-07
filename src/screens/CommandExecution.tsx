@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Box, Text } from "ink";
+import { Box, Text, useInput } from "ink";
 import { Spinner } from "../components/Spinner.js";
 import { SelectList, type SelectItem } from "../components/SelectList.js";
 import { ConfirmPrompt } from "../components/ConfirmPrompt.js";
@@ -52,13 +52,38 @@ export function CommandExecution({
   const [phase, setPhase] = useState<Phase>("confirm");
   const [currentArgs, setCurrentArgs] = useState(initialArgs);
   const [pinMessage, setPinMessage] = useState<string>();
-  const { status, result, run, reset } = useCommand(tool, process.cwd(), {
+  const { status, result, run, reset, abort } = useCommand(tool, process.cwd(), {
     quiet: panelMode,
   });
   const { runInteractive } = useInteractiveRun();
 
+  const [outputFocused, setOutputFocused] = useState(false);
+  const [copyMessage, setCopyMessage] = useState<string>();
+
   const cmdDisplay = `${tool} ${currentArgs.join(" ")}`;
   const runCommand = currentArgs.join(" ");
+
+  useInput(
+    (_input, key) => {
+      if (key.escape) {
+        abort();
+        onBack();
+      }
+    },
+    { isActive: isInputActive && phase === "running" },
+  );
+
+  useInput(
+    (input, key) => {
+      if (input === "o" && !outputFocused) {
+        setOutputFocused(true);
+      }
+      if (key.escape && outputFocused) {
+        setOutputFocused(false);
+      }
+    },
+    { isActive: isInputActive && phase === "error-menu" },
+  );
 
   useEffect(() => {
     if (phase === "running" && status === "idle") {
@@ -89,6 +114,17 @@ export function CommandExecution({
   }, [phase, runCommand, status]);
 
   if (phase === "confirm") {
+    const pinned = isPinnedRun(runCommand);
+    const confirmItems: SelectItem[] = [
+      { value: "execute", label: "▶ Execute command" },
+      {
+        value: "pin",
+        label: pinned ? "📌 Unpin command" : "📌 Pin command",
+        hint: "Save to quick access",
+      },
+      { value: "cancel", label: "← Cancel" },
+    ];
+
     const confirmContent = (
       <Box flexDirection="column">
         <Box marginBottom={1} gap={1}>
@@ -97,23 +133,41 @@ export function CommandExecution({
           </Text>
           <ToolBadge tool={tool} />
         </Box>
-        <ConfirmPrompt
-          message={`Execute ${cmdDisplay}?`}
-          defaultValue={true}
-          onConfirm={(confirmed) => {
-            if (confirmed) {
-              setPhase("running");
-            } else {
-              onBack();
+
+        {pinMessage && (
+          <Box marginBottom={1}>
+            <Text color={inkColors.accent}>{pinMessage}</Text>
+          </Box>
+        )}
+
+        <SelectList
+          items={confirmItems}
+          onSelect={(action) => {
+            switch (action) {
+              case "execute":
+                setPinMessage(undefined);
+                setPhase("running");
+                break;
+              case "pin":
+                togglePinnedRun(runCommand);
+                setPinMessage(
+                  isPinnedRun(runCommand)
+                    ? "✓ Command pinned"
+                    : "✓ Command unpinned",
+                );
+                break;
+              case "cancel":
+                onBack();
+                break;
             }
           }}
           onCancel={onBack}
+          width={panelMode ? Math.max(20, width - 4) : width}
           isInputActive={isInputActive}
           arrowNavigation={panelMode}
+          boxedSections={panelMode}
+          panelFocused={isInputActive}
         />
-        <Box marginTop={1}>
-          <Text dimColor>Enter to execute · n to cancel</Text>
-        </Box>
       </Box>
     );
 
@@ -151,6 +205,11 @@ export function CommandExecution({
         <Divider width={panelMode ? width - 4 : width} />
         <Box marginTop={1}>
           <Spinner label={`Executing ${cmdDisplay}...`} />
+        </Box>
+        <Box marginTop={1}>
+          <Text dimColor>Press </Text>
+          <Text color={inkColors.accent}>Esc</Text>
+          <Text dimColor> to abort</Text>
         </Box>
       </Box>
     );
@@ -291,6 +350,15 @@ export function CommandExecution({
     label: "\uD83D\uDCCB Copy command to clipboard",
   });
   errorItems.push({
+    value: "copy-output",
+    label: "📄 Copy output to clipboard",
+  });
+  errorItems.push({
+    value: "__nav_header__",
+    label: "",
+    kind: "header",
+  });
+  errorItems.push({
     value: "menu",
     label: "\u2190 Back to menu",
   });
@@ -352,13 +420,30 @@ export function CommandExecution({
       <CommandOutput
         stdout={result?.stdout}
         stderr={result?.stderr}
-        height={Math.max(3, height - 13 - errorItems.length - (suggestions.length > 0 ? suggestions.length + 4 : 0))}
-        isActive={false}
+        height={Math.max(3, height - 14 - errorItems.length - (suggestions.length > 0 ? suggestions.length + 4 : 0) - (copyMessage ? 1 : 0))}
+        isActive={isInputActive && outputFocused}
       />
 
-      <Box marginTop={1} marginBottom={1}>
-        <Text bold>What would you like to do?</Text>
-      </Box>
+      {copyMessage && (
+        <Box marginTop={1}>
+          <Text color={inkColors.accent}>{copyMessage}</Text>
+        </Box>
+      )}
+
+      {outputFocused ? (
+        <Box marginTop={1}>
+          <Text dimColor>j/k scroll · </Text>
+          <Text color={inkColors.accent}>Esc</Text>
+          <Text dimColor> back to menu</Text>
+        </Box>
+      ) : (
+        <Box marginTop={1} marginBottom={1}>
+          <Text bold>What would you like to do?</Text>
+          <Text dimColor>  (press </Text>
+          <Text color={inkColors.accent}>o</Text>
+          <Text dimColor> to scroll output)</Text>
+        </Box>
+      )}
 
       <SelectList
         items={errorItems}
@@ -381,6 +466,7 @@ export function CommandExecution({
           switch (action) {
             case "retry":
               setPinMessage(undefined);
+              setCopyMessage(undefined);
               reset();
               setPhase("running");
               break;
@@ -388,6 +474,7 @@ export function CommandExecution({
               const newArgs = [...currentArgs, "--debug"];
               setCurrentArgs(newArgs);
               setPinMessage(undefined);
+              setCopyMessage(undefined);
               reset();
               setPhase("running");
               break;
@@ -404,7 +491,14 @@ export function CommandExecution({
             }
             case "copy":
               await copyToClipboard(cmdDisplay);
+              setCopyMessage("✓ Command copied to clipboard");
               break;
+            case "copy-output": {
+              const output = [result?.stdout, result?.stderr].filter(Boolean).join("\n");
+              await copyToClipboard(output);
+              setCopyMessage("✓ Output copied to clipboard");
+              break;
+            }
             case "menu":
               (onHome ?? onBack)();
               break;
@@ -417,9 +511,9 @@ export function CommandExecution({
         boxedSections={panelMode}
         width={panelMode ? Math.max(20, width - 4) : width}
         maxVisible={panelMode ? Math.max(errorItems.length + (suggestions.length > 0 ? 4 : 0), height - 6) : undefined}
-        isInputActive={isInputActive}
+        isInputActive={isInputActive && !outputFocused}
         arrowNavigation={panelMode}
-        panelFocused={isInputActive}
+        panelFocused={isInputActive && !outputFocused}
       />
 
       {!panelMode && <StatusBar width={width} />}

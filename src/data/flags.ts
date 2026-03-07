@@ -29,6 +29,11 @@ export const toolFlags: Record<CliToolId, FlagDef[]> = {
     { value: "--debug", label: "--debug", hint: "Debug mode" },
   ],
   git: [],
+  pkg: [
+    { value: "--save-dev", label: "--save-dev", hint: "Save as dev dependency" },
+    { value: "--global", label: "--global", hint: "Install globally" },
+    { value: "--dry-run", label: "--dry-run", hint: "Show what would happen" },
+  ],
 };
 
 export function getFlagsForTool(toolId: CliToolId): FlagDef[] {

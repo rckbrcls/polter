@@ -3,12 +3,13 @@ import { supabaseCommands } from "./commands/supabase.js";
 import { ghCommands } from "./commands/gh.js";
 import { vercelCommands } from "./commands/vercel.js";
 import { gitCommands } from "./commands/git.js";
+import { pkgCommands } from "./commands/pkg.js";
+
+const allSources = [...supabaseCommands, ...ghCommands, ...vercelCommands, ...gitCommands, ...pkgCommands];
 
 function pick(ids: string[]) {
   const idSet = new Set(ids);
-  return [...supabaseCommands, ...ghCommands, ...vercelCommands, ...gitCommands].filter(
-    (cmd) => idSet.has(cmd.id),
-  );
+  return allSources.filter((cmd) => idSet.has(cmd.id));
 }
 
 export const features: Feature[] = [
@@ -48,7 +49,7 @@ export const features: Feature[] = [
   },
   {
     id: "repo",
-    icon: "📦",
+    icon: "\uD83D\uDDC3\uFE0F",
     label: "Repo",
     commands: pick([
       "git:status",
@@ -122,6 +123,34 @@ export const features: Feature[] = [
       "vercel:domains:list",
       "vercel:domains:add",
       "vercel:domains:rm",
+    ]),
+  },
+  {
+    id: "packages",
+    icon: "\uD83D\uDCCB",
+    label: "Packages",
+    commands: pick([
+      "pkg:install",
+      "pkg:add",
+      "pkg:remove",
+      "pkg:update",
+      "pkg:outdated",
+      "pkg:audit",
+      "pkg:ls",
+      "pkg:build",
+      "pkg:run",
+      "pkg:publish",
+      "pkg:pack",
+      "pkg:version:patch",
+      "pkg:version:minor",
+      "pkg:version:major",
+      "pkg:login",
+      "pkg:logout",
+      "pkg:config:list",
+      "pkg:whoami",
+      "pkg:info",
+      "pkg:search",
+      "pkg:init",
     ]),
   },
   {

@@ -104,20 +104,20 @@ describe("runInteractiveCommand", () => {
 
 describe("runCommand", () => {
   it("captures stdout in quiet mode without inheriting stdin", async () => {
-    const result = await runCommand("echo", ["hello"], "/tmp", { quiet: true });
+    const result = await runCommand("echo", ["hello"], "/tmp", { quiet: true }).promise;
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout.trim()).toBe("hello");
   });
 
   it("returns non-zero exit code for failing commands in quiet mode", async () => {
-    const result = await runCommand("false", [], "/tmp", { quiet: true });
+    const result = await runCommand("false", [], "/tmp", { quiet: true }).promise;
 
     expect(result.exitCode).not.toBe(0);
   });
 
   it("does not hang on commands that would read stdin in quiet mode", async () => {
-    const result = await runCommand("cat", [], "/tmp", { quiet: true });
+    const result = await runCommand("cat", [], "/tmp", { quiet: true }).promise;
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toBe("");

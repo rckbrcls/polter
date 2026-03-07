@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { resolveSupabaseCommand, type CommandExecution } from "./runner.js";
 import { commandExists, execCapture } from "./system.js";
 import type { CliToolId } from "../data/types.js";
+import { detectPkgManager } from "./pkgManager.js";
 
 export interface ToolResolution extends CommandExecution {
   source: "repository" | "path" | "not-found";
@@ -28,6 +29,14 @@ export function resolveToolCommand(
     };
   }
 
+  if (toolId === "pkg") {
+    const mgr = detectPkgManager(cwd);
+    if (!commandExists(mgr.command)) {
+      return { command: mgr.command, source: "not-found" };
+    }
+    return { command: mgr.command, env: { ...process.env }, source: "path" };
+  }
+
   const command = toolId;
   if (!commandExists(command)) {
     return { command, source: "not-found" };
@@ -47,6 +56,10 @@ export function getToolVersion(toolId: CliToolId): string | undefined {
         return execCapture("vercel --version").split("\n")[0]?.trim();
       case "git":
         return execCapture("git --version").replace(/^git version\s+/i, "").trim();
+      case "pkg": {
+        const mgr = detectPkgManager();
+        return execCapture(`${mgr.command} --version`).split("\n")[0]?.trim();
+      }
       default:
         return undefined;
     }
@@ -65,9 +78,11 @@ export function getToolInfo(toolId: CliToolId): ToolInfo {
     gh: "GitHub CLI",
     vercel: "Vercel CLI",
     git: "Git",
+    pkg: "Package Manager",
   };
 
-  const installed = commandExists(toolId === "supabase" ? "supabase" : toolId);
+  const commandName = toolId === "supabase" ? "supabase" : toolId === "pkg" ? detectPkgManager().command : toolId;
+  const installed = commandExists(commandName);
   const version = installed ? getToolVersion(toolId) : undefined;
 
   const info: ToolInfo = {
@@ -108,6 +123,18 @@ function detectVercelLink(cwd: string): { linked: boolean; project?: string } {
   return { linked: false };
 }
 
+function detectPkgLink(cwd: string): { linked: boolean; project?: string } {
+  try {
+    const pkgPath = join(cwd, "package.json");
+    if (existsSync(pkgPath)) {
+      const data = JSON.parse(readFileSync(pkgPath, "utf-8"));
+      const mgr = detectPkgManager(cwd);
+      return { linked: true, project: data.name ? `${data.name} (${mgr.id})` : mgr.id };
+    }
+  } catch { /* ignore */ }
+  return { linked: false };
+}
+
 function detectGhLink(cwd: string): { linked: boolean; project?: string } {
   try {
     const remote = execCapture(`git -C "${cwd}" remote get-url origin 2>/dev/null`);
@@ -138,6 +165,9 @@ export function getToolLinkInfo(toolId: CliToolId, cwd: string = process.cwd()):
         break;
       case "gh":
         linkStatus = detectGhLink(cwd);
+        break;
+      case "pkg":
+        linkStatus = detectPkgLink(cwd);
         break;
     }
   }

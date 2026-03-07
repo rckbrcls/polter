@@ -7,6 +7,7 @@ const toolColors: Record<CliToolId, string> = {
   gh: "#58A6FF",
   vercel: "#FFFFFF",
   git: "#F05032",
+  pkg: "#CB3837",
 };
 
 const toolLabels: Record<CliToolId, string> = {
@@ -14,6 +15,7 @@ const toolLabels: Record<CliToolId, string> = {
   gh: "github",
   vercel: "vercel",
   git: "git",
+  pkg: "pkg",
 };
 
 interface ToolBadgeProps {

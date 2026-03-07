@@ -2,6 +2,7 @@ import type { Pipeline, PipelineStep } from "../data/types.js";
 import { runCommand, type RunResult } from "../lib/runner.js";
 import { resolveToolCommand } from "../lib/toolResolver.js";
 import { getCommandById } from "../data/commands/index.js";
+import { resolvePkgArgs } from "../lib/pkgManager.js";
 
 export type StepStatus = "pending" | "running" | "success" | "error" | "skipped";
 
@@ -46,14 +47,20 @@ export async function executePipeline(
     const cmdDef = getCommandById(step.commandId);
     const toolId = cmdDef?.tool ?? "supabase";
     const resolved = resolveToolCommand(toolId, cwd);
-    const baseArgs = cmdDef?.base ?? [];
+    let baseArgs = cmdDef?.base ?? [];
+    if (toolId === "pkg" && cmdDef) {
+      try {
+        const translated = resolvePkgArgs(cmdDef.base, cwd);
+        baseArgs = translated.args;
+      } catch { /* unsupported command — will fail at execution */ }
+    }
     const allArgs = [...baseArgs, ...step.args, ...step.flags];
 
     const result = await runCommand(
       { command: resolved.command, env: resolved.env },
       allArgs,
       cwd,
-    );
+    ).promise;
 
     const success = !result.spawnError && result.exitCode === 0;
     stepResults[i] = {

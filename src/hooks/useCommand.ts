@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import {
   runCommand,
   type CommandExecution,
@@ -16,6 +16,14 @@ export function useCommand(
 ) {
   const [status, setStatus] = useState<CommandStatus>("idle");
   const [result, setResult] = useState<RunResult | null>(null);
+  const abortRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    return () => {
+      abortRef.current?.();
+      abortRef.current = null;
+    };
+  }, []);
 
   const run = useCallback(async (args: string[]) => {
     setStatus("running");
@@ -36,7 +44,10 @@ export function useCommand(
     }
 
     const runOpts = options?.quiet ? { quiet: true } : undefined;
-    const res = await runCommand(resolvedExecution, args, cwd, runOpts);
+    const handle = runCommand(resolvedExecution, args, cwd, runOpts);
+    abortRef.current = handle.abort;
+    const res = await handle.promise;
+    abortRef.current = null;
     setResult(res);
 
     if (res.spawnError || (res.exitCode !== null && res.exitCode !== 0)) {
@@ -48,10 +59,15 @@ export function useCommand(
     return res;
   }, [cwd, execution, options?.quiet]);
 
+  const abort = useCallback(() => {
+    abortRef.current?.();
+    abortRef.current = null;
+  }, []);
+
   const reset = useCallback(() => {
     setStatus("idle");
     setResult(null);
   }, []);
 
-  return { status, result, run, reset };
+  return { status, result, run, reset, abort };
 }

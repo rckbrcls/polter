@@ -10,6 +10,7 @@ import {
   getProjectConfigPath,
 } from "../config/projectConfig.js";
 import { useEditor } from "../hooks/useEditor.js";
+import { detectPkgManager, type PkgManagerId } from "../lib/pkgManager.js";
 
 interface ProjectConfigProps {
   onBack: () => void;
@@ -19,7 +20,15 @@ interface ProjectConfigProps {
   isInputActive?: boolean;
 }
 
-type Phase = "overview" | "edit-supabase-ref" | "edit-vercel-id" | "edit-gh-repo";
+type Phase =
+  | "overview"
+  | "edit-supabase-ref"
+  | "edit-vercel-id"
+  | "edit-gh-repo"
+  | "edit-pkg-manager"
+  | "add-env-var"
+  | "add-env-value"
+  | "manage-env-entry";
 
 export function ProjectConfig({
   onBack,
@@ -32,7 +41,10 @@ export function ProjectConfig({
   const [config, setConfig] = useState(() => getOrCreateProjectConfig());
   const [phase, setPhase] = useState<Phase>("overview");
   const [feedback, setFeedback] = useState<string>();
+  const [envKey, setEnvKey] = useState("");
+  const [selectedEnvKey, setSelectedEnvKey] = useState("");
   const { openEditor, isEditing } = useEditor();
+  const detectedPkg = useMemo(() => detectPkgManager(), []);
 
   if (!configPath) {
     return (
@@ -140,28 +152,192 @@ export function ProjectConfig({
     );
   }
 
+  if (phase === "edit-pkg-manager") {
+    const pkgOptions = [
+      { value: "npm", label: "npm" },
+      { value: "pnpm", label: "pnpm" },
+      { value: "yarn", label: "yarn" },
+      { value: "bun", label: "bun" },
+      { value: "__auto__", label: `auto-detect (${detectedPkg.id})` },
+      { value: "__cancel__", label: "\u2190 Cancel" },
+    ];
+
+    return (
+      <Box flexDirection="column" paddingX={panelMode ? 1 : 0}>
+        <Box marginBottom={1}>
+          <Text bold>Select package manager:</Text>
+        </Box>
+        <SelectList
+          items={pkgOptions}
+          onSelect={(value) => {
+            if (value === "__cancel__") {
+              setPhase("overview");
+              return;
+            }
+            const manager = value === "__auto__" ? undefined : (value as PkgManagerId);
+            const updated = {
+              ...config,
+              tools: {
+                ...config.tools,
+                pkg: manager ? { ...config.tools.pkg, manager } : {},
+              },
+            };
+            writeProjectConfig(updated);
+            setConfig(updated);
+            setFeedback(manager ? `Package manager set to ${manager}` : "Package manager cleared (auto-detect)");
+            setPhase("overview");
+          }}
+          onCancel={() => setPhase("overview")}
+          width={panelMode ? Math.max(20, width - 4) : width}
+          isInputActive={isInputActive}
+          arrowNavigation={panelMode}
+          panelFocused={panelMode ? isInputActive : undefined}
+        />
+      </Box>
+    );
+  }
+
+  if (phase === "add-env-var") {
+    return (
+      <Box flexDirection="column" paddingX={panelMode ? 1 : 0}>
+        <TextPrompt
+          label="Environment variable name:"
+          placeholder="e.g. API_KEY"
+          onSubmit={(val) => {
+            const key = val.trim();
+            if (!key) {
+              setPhase("overview");
+              return;
+            }
+            setEnvKey(key);
+            setPhase("add-env-value");
+          }}
+          onCancel={() => setPhase("overview")}
+          arrowNavigation={panelMode}
+          isInputActive={isInputActive}
+          boxed={panelMode}
+          focused={isInputActive}
+        />
+      </Box>
+    );
+  }
+
+  if (phase === "add-env-value") {
+    return (
+      <Box flexDirection="column" paddingX={panelMode ? 1 : 0}>
+        <TextPrompt
+          label={`Value for ${envKey}:`}
+          placeholder="Enter value"
+          onSubmit={(val) => {
+            const updated = {
+              ...config,
+              env: { ...config.env, [envKey]: val },
+            };
+            writeProjectConfig(updated);
+            setConfig(updated);
+            setFeedback(`Set ${envKey}`);
+            setEnvKey("");
+            setPhase("overview");
+          }}
+          onCancel={() => {
+            setEnvKey("");
+            setPhase("overview");
+          }}
+          arrowNavigation={panelMode}
+          isInputActive={isInputActive}
+          boxed={panelMode}
+          focused={isInputActive}
+        />
+      </Box>
+    );
+  }
+
+  if (phase === "manage-env-entry") {
+    const currentVal = config.env?.[selectedEnvKey] ?? "";
+    const items = [
+      { value: "__info__", label: `${selectedEnvKey} = ${currentVal}`, kind: "header" as const, selectable: false },
+      { value: "edit", label: "Edit value", kind: "action" as const },
+      { value: "remove", label: "Remove", kind: "action" as const },
+      { value: "__cancel__", label: "\u2190 Cancel" },
+    ];
+
+    return (
+      <Box flexDirection="column" paddingX={panelMode ? 1 : 0}>
+        <SelectList
+          items={items}
+          onSelect={(value) => {
+            if (value === "edit") {
+              setEnvKey(selectedEnvKey);
+              setPhase("add-env-value");
+            } else if (value === "remove") {
+              const newEnv = { ...config.env };
+              delete newEnv[selectedEnvKey];
+              const updated = { ...config, env: newEnv };
+              writeProjectConfig(updated);
+              setConfig(updated);
+              setFeedback(`Removed ${selectedEnvKey}`);
+              setPhase("overview");
+            } else {
+              setPhase("overview");
+            }
+          }}
+          onCancel={() => setPhase("overview")}
+          width={panelMode ? Math.max(20, width - 4) : width}
+          isInputActive={isInputActive}
+          arrowNavigation={panelMode}
+          panelFocused={panelMode ? isInputActive : undefined}
+        />
+      </Box>
+    );
+  }
+
+  const envEntries = Object.entries(config.env ?? {});
+  const pkgDisplay = config.tools.pkg?.manager ?? `auto-detect (${detectedPkg.id})`;
+
   const configItems = [
-    { value: "__section_current__", label: "📋 Current Values", kind: "header" as const, selectable: false },
+    { value: "__section_current__", label: "\uD83D\uDCCB Current Values", kind: "header" as const, selectable: false },
     { value: "__info_supabase__", label: `Supabase ref: ${config.tools.supabase?.projectRef ?? "not set"}`, kind: "header" as const, selectable: false },
     { value: "__info_vercel__", label: `Vercel ID: ${config.tools.vercel?.projectId ?? "not set"}`, kind: "header" as const, selectable: false },
     { value: "__info_gh__", label: `GitHub repo: ${config.tools.gh?.repo ?? "not set"}`, kind: "header" as const, selectable: false },
-    { value: "__section_actions__", label: "⚡ Actions", kind: "header" as const, selectable: false },
+    { value: "__info_pkg__", label: `Pkg manager: ${pkgDisplay}`, kind: "header" as const, selectable: false },
+    { value: "__info_pipelines__", label: `Pipelines: ${config.pipelines.length}`, kind: "header" as const, selectable: false },
+    ...(envEntries.length > 0
+      ? [
+          { value: "__section_env__", label: "\uD83D\uDD10 Environment Variables", kind: "header" as const, selectable: false },
+          ...envEntries.map(([k, v]) => ({
+            value: `env:${k}`,
+            label: `${k} = ${v}`,
+            kind: "action" as const,
+          })),
+        ]
+      : []),
+    { value: "__section_actions__", label: "\u26A1 Actions", kind: "header" as const, selectable: false },
     { value: "supabase", label: "Set Supabase project ref", kind: "action" as const },
     { value: "vercel", label: "Set Vercel project ID", kind: "action" as const },
     { value: "gh", label: "Set GitHub repo", kind: "action" as const },
+    { value: "pkg-manager", label: "Set package manager", kind: "action" as const },
+    { value: "add-env", label: "Add environment variable", kind: "action" as const },
     { value: "editor", label: "Open config in editor", kind: "action" as const },
-    ...(!panelMode ? [{ value: "__back__", label: "← Back" }] : []),
+    ...(!panelMode ? [{ value: "__back__", label: "\u2190 Back" }] : []),
   ];
 
   const flatItems = [
     { value: "supabase", label: "Set Supabase project ref" },
     { value: "vercel", label: "Set Vercel project ID" },
     { value: "gh", label: "Set GitHub repo" },
+    { value: "pkg-manager", label: "Set package manager" },
+    { value: "add-env", label: "Add environment variable" },
     { value: "editor", label: "Open config in editor" },
-    ...(!panelMode ? [{ value: "__back__", label: "← Back" }] : []),
+    ...(!panelMode ? [{ value: "__back__", label: "\u2190 Back" }] : []),
   ];
 
   const handleSelect = (value: string) => {
+    if (value.startsWith("env:")) {
+      setSelectedEnvKey(value.slice(4));
+      setPhase("manage-env-entry");
+      return;
+    }
+
     switch (value) {
       case "supabase":
         setPhase("edit-supabase-ref");
@@ -171,6 +347,12 @@ export function ProjectConfig({
         break;
       case "gh":
         setPhase("edit-gh-repo");
+        break;
+      case "pkg-manager":
+        setPhase("edit-pkg-manager");
+        break;
+      case "add-env":
+        setPhase("add-env-var");
         break;
       case "editor":
         openEditor(configPath!.file).then(() => {
@@ -235,6 +417,20 @@ export function ProjectConfig({
         <Text>
           GitHub repo: {config.tools.gh?.repo ?? <Text dimColor>not set</Text>}
         </Text>
+        <Text>
+          Pkg manager: {pkgDisplay}
+        </Text>
+        <Text>
+          Pipelines: {config.pipelines.length}
+        </Text>
+        {envEntries.length > 0 && (
+          <>
+            <Text bold>{"\n"}Environment Variables:</Text>
+            {envEntries.map(([k, v]) => (
+              <Text key={k}>  {k} = {v}</Text>
+            ))}
+          </>
+        )}
       </Box>
 
       {feedback && (

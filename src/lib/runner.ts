@@ -88,29 +88,34 @@ export function resolveSupabaseCommand(
   };
 }
 
-export async function runCommand(
+export interface RunHandle {
+  promise: Promise<RunResult>;
+  abort: () => void;
+}
+
+export function runCommand(
   execution: string | CommandExecution,
   args: string[],
   cwd: string = process.cwd(),
   options?: { quiet?: boolean },
-): Promise<RunResult> {
-  return new Promise<RunResult>((resolve) => {
-    let stdout = "";
-    let stderr = "";
-    const resolvedExecution =
-      typeof execution === "string" ? { command: execution } : execution;
+): RunHandle {
+  let stdout = "";
+  let stderr = "";
+  const resolvedExecution =
+    typeof execution === "string" ? { command: execution } : execution;
 
-    const child = spawn(resolvedExecution.command, args, {
-      cwd,
-      env: resolvedExecution.env,
-      shell: true,
-      stdio: [options?.quiet ? "pipe" : "inherit", "pipe", "pipe"],
-    });
+  const child = spawn(resolvedExecution.command, args, {
+    cwd,
+    env: resolvedExecution.env,
+    shell: true,
+    stdio: [options?.quiet ? "pipe" : "inherit", "pipe", "pipe"],
+  });
 
-    if (options?.quiet) {
-      child.stdin?.end();
-    }
+  if (options?.quiet) {
+    child.stdin?.end();
+  }
 
+  const promise = new Promise<RunResult>((resolve) => {
     child.stdout?.on("data", (data: Buffer) => {
       const text = data.toString();
       stdout += text;
@@ -137,6 +142,11 @@ export async function runCommand(
       resolve({ exitCode: code, signal, stdout, stderr });
     });
   });
+
+  return {
+    promise,
+    abort: () => child.kill("SIGTERM"),
+  };
 }
 
 export function runInteractiveCommand(
@@ -165,5 +175,5 @@ export async function runSupabaseCommand(
   args: string[],
   cwd: string = process.cwd(),
 ): Promise<RunResult> {
-  return runCommand(resolveSupabaseCommand(cwd), args, cwd);
+  return runCommand(resolveSupabaseCommand(cwd), args, cwd).promise;
 }

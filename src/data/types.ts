@@ -1,4 +1,4 @@
-export type CliToolId = "supabase" | "gh" | "vercel" | "git";
+export type CliToolId = "supabase" | "gh" | "vercel" | "git" | "pkg";
 
 export interface CommandDef {
   id: string;
@@ -50,6 +50,7 @@ export interface ProjectConfig {
     vercel?: { projectId?: string; orgId?: string };
     gh?: { repo?: string };
     git?: {};
+    pkg?: { manager?: import("../lib/pkgManager.js").PkgManagerId };
   };
   env?: Record<string, string>;
   pipelines: Pipeline[];
@@ -68,4 +69,10 @@ export type Screen =
   | "pipeline-builder"
   | "pipeline-execution"
   | "project-config"
-  | "tool-status";
+  | "tool-status"
+  | "mcp-manage"
+  | "process-list"
+  | "process-logs"
+  | "declarative-plan"
+  | "declarative-status"
+  | "init-scaffold";

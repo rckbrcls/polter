@@ -133,7 +133,7 @@ async function runOrThrow(
   cwd: string,
   failureMessage: string,
 ): Promise<void> {
-  const result = await runCommand(execution, args, cwd);
+  const result = await runCommand(execution, args, cwd).promise;
   if (result.spawnError || result.exitCode !== 0) {
     throw new Error(
       result.stderr.trim() || result.spawnError || failureMessage,

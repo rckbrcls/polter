@@ -135,6 +135,15 @@ export function Home({
       case "__action_update__":
         onNavigate("self-update");
         break;
+      case "__action_declarative_plan__":
+        onNavigate("declarative-plan");
+        break;
+      case "__action_declarative_status__":
+        onNavigate("declarative-status");
+        break;
+      case "__action_init_scaffold__":
+        onNavigate("init-scaffold");
+        break;
       case "__action_exit__":
         onExit();
         break;

@@ -36,6 +36,9 @@ export function TextPrompt({
     if (arrowNavigation && key.leftArrow && value === "" && onCancel) {
       onCancel();
     }
+    if (arrowNavigation && key.rightArrow) {
+      handleSubmit(value);
+    }
   }, { isActive: isInputActive });
 
   const handleSubmit = (val: string) => {

@@ -9,7 +9,9 @@ export type PanelView =
   | "tool-status"
   | "config"
   | "self-update"
-  | "custom-command";
+  | "custom-command"
+  | "processes"
+  | "declarative";
 
 export interface PanelNavState {
   view: PanelView;
@@ -31,7 +33,7 @@ export function usePanelNavigation() {
   const selectSidebarItem = useCallback((itemId: string) => {
     const featureIds = [
       "database", "functions", "deploy", "repo", "cicd",
-      "auth-storage", "networking", "infrastructure", "setup",
+      "auth-storage", "networking", "packages", "infrastructure", "setup",
     ];
 
     if (featureIds.includes(itemId)) {
@@ -52,6 +54,8 @@ export function usePanelNavigation() {
       "tool-status": "tool-status",
       config: "config",
       "self-update": "self-update",
+      processes: "processes",
+      declarative: "declarative",
     };
 
     const view = viewMap[itemId];

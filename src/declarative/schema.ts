@@ -37,6 +37,10 @@ export interface PolterYaml {
     secrets?: string[];
   };
 
+  pkg?: {
+    manager?: "npm" | "pnpm" | "yarn" | "bun";
+  };
+
   pipelines?: Record<
     string,
     {
@@ -47,7 +51,7 @@ export interface PolterYaml {
 }
 
 export interface PlanAction {
-  tool: "supabase" | "vercel" | "gh";
+  tool: "supabase" | "vercel" | "gh" | "pkg";
   action: "create" | "update" | "delete";
   resource: string;
   description: string;

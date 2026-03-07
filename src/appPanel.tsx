@@ -24,6 +24,13 @@ import { ProjectConfig } from "./screens/ProjectConfig.js";
 import { PipelineList } from "./screens/PipelineList.js";
 import { PipelineBuilder } from "./screens/PipelineBuilder.js";
 import { PipelineExecution } from "./screens/PipelineExecution.js";
+import { McpManage } from "./screens/McpManage.js";
+import { ProcessList } from "./screens/ProcessList.js";
+import { ProcessLogs } from "./screens/ProcessLogs.js";
+import { DeclarativeHome } from "./screens/DeclarativeHome.js";
+import { DeclarativePlan } from "./screens/DeclarativePlan.js";
+import { DeclarativeStatus } from "./screens/DeclarativeStatus.js";
+import { InitScaffold } from "./screens/InitScaffold.js";
 import { getFeatureById } from "./data/features.js";
 import { colors } from "./theme.js";
 import type { PanelNavState } from "./hooks/usePanelNavigation.js";
@@ -40,6 +47,12 @@ const screenLabels: Record<string, string> = {
   "self-update": "Update",
   "tool-status": "Status",
   "project-config": "Config",
+  "mcp-manage": "MCP",
+  "process-list": "Processes",
+  "process-logs": "Logs",
+  "declarative-plan": "Plan/Apply",
+  "declarative-status": "Status",
+  "init-scaffold": "Init",
 };
 
 function buildBreadcrumb(nav: PanelNavState): string {
@@ -68,6 +81,12 @@ function buildBreadcrumb(nav: PanelNavState): string {
       break;
     case "self-update":
       base = "⬆️ Update";
+      break;
+    case "processes":
+      base = "\uD83D\uDCBB Processes";
+      break;
+    case "declarative":
+      base = "\uD83C\uDFD7\uFE0F Infrastructure";
       break;
     default:
       base = nav.view;
@@ -183,6 +202,8 @@ export function AppPanel(): React.ReactElement {
       case "tool-status": return "tool-status";
       case "config": return "config";
       case "self-update": return "self-update";
+      case "processes": return "processes";
+      case "declarative": return "declarative";
       default: return nav.featureId;
     }
   })();
@@ -279,9 +300,33 @@ export function AppPanel(): React.ReactElement {
         return (
           <ToolStatus
             onBack={focus.focusSidebar}
+            onNavigate={nav.navigateInner}
             width={mainContentWidth - 2}
             height={mainContentHeight}
             panelMode
+            isInputActive={focus.isMainFocused}
+          />
+        );
+
+      case "processes":
+        return (
+          <ProcessList
+            onNavigate={nav.navigateInner}
+            onBack={focus.focusSidebar}
+            width={mainContentWidth - 2}
+            height={mainContentHeight}
+            panelMode
+            isInputActive={focus.isMainFocused}
+          />
+        );
+
+      case "declarative":
+        return (
+          <DeclarativeHome
+            onNavigate={nav.navigateInner}
+            onBack={focus.focusSidebar}
+            width={mainContentWidth - 2}
+            height={mainContentHeight}
             isInputActive={focus.isMainFocused}
           />
         );
@@ -431,6 +476,42 @@ export function AppPanel(): React.ReactElement {
         return (
           <ToolStatus
             onBack={nav.goBackInner}
+            onNavigate={nav.navigateInner}
+            width={w}
+            height={mainContentHeight}
+            panelMode
+            isInputActive={isActive}
+          />
+        );
+
+      case "mcp-manage":
+        return (
+          <McpManage
+            onBack={nav.goBackInner}
+            width={w}
+            height={mainContentHeight}
+            panelMode
+            isInputActive={isActive}
+          />
+        );
+
+      case "process-list":
+        return (
+          <ProcessList
+            onNavigate={nav.navigateInner}
+            onBack={nav.goBackInner}
+            width={w}
+            height={mainContentHeight}
+            panelMode
+            isInputActive={isActive}
+          />
+        );
+
+      case "process-logs":
+        return (
+          <ProcessLogs
+            processId={nav.innerParams.processId ?? ""}
+            onBack={nav.goBackInner}
             width={w}
             height={mainContentHeight}
             panelMode
@@ -442,6 +523,41 @@ export function AppPanel(): React.ReactElement {
         return (
           <ProjectConfig
             onBack={nav.goBackInner}
+            width={w}
+            height={mainContentHeight}
+            panelMode
+            isInputActive={isActive}
+          />
+        );
+
+      case "declarative-plan":
+        return (
+          <DeclarativePlan
+            onBack={nav.goBackInner}
+            onNavigate={nav.navigateInner}
+            width={w}
+            height={mainContentHeight}
+            panelMode
+            isInputActive={isActive}
+          />
+        );
+
+      case "declarative-status":
+        return (
+          <DeclarativeStatus
+            onBack={nav.goBackInner}
+            width={w}
+            height={mainContentHeight}
+            panelMode
+            isInputActive={isActive}
+          />
+        );
+
+      case "init-scaffold":
+        return (
+          <InitScaffold
+            onBack={nav.goBackInner}
+            onNavigate={nav.navigateInner}
             width={w}
             height={mainContentHeight}
             panelMode

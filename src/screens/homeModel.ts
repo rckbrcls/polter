@@ -22,14 +22,6 @@ export function buildPinnedOnlyItems(
   const items: SelectItem[] = [];
 
   if (pinnedCommands.length > 0) {
-    items.push({
-      id: "pinned-commands-header",
-      value: "__pinned_commands_header__",
-      label: "📌 Commands",
-      kind: "header",
-      selectable: false,
-    });
-
     for (const command of pinnedCommands) {
       const cmdDef = findCommandByValue(command);
       const toolHint = cmdDef ? cmdDef.tool : "supabase";
@@ -38,7 +30,7 @@ export function buildPinnedOnlyItems(
       items.push({
         id: `command:${command}`,
         value: command,
-        label: command,
+        label: cmdDef ? `${cmdDef.tool} ${command}` : command,
         hint: [toolHint, labelHint].filter(Boolean).join(" · "),
         icon: "📌",
         kind: "command",
@@ -49,14 +41,6 @@ export function buildPinnedOnlyItems(
   }
 
   if (pinnedRuns.length > 0) {
-    items.push({
-      id: "pinned-runs-header",
-      value: "__pinned_runs_header__",
-      label: "▶ Pipelines",
-      kind: "header",
-      selectable: false,
-    });
-
     for (const runCommand of pinnedRuns) {
       const baseCommand = runCommand.split(" ").filter(Boolean)[0] ?? "";
       const cmdDef = findCommandByValue(baseCommand);
@@ -65,7 +49,7 @@ export function buildPinnedOnlyItems(
       items.push({
         id: `run:${runCommand}`,
         value: runCommand,
-        label: runCommand,
+        label: cmdDef ? `${cmdDef.tool} ${runCommand}` : runCommand,
         hint: toolHint,
         icon: "▶",
         kind: "run",
@@ -155,6 +139,85 @@ export function buildHomeItems({
       });
     }
   }
+
+  // System section
+  items.push({
+    id: "section-system",
+    value: "__section_system__",
+    label: "\u2699\uFE0F System",
+    kind: "header",
+    selectable: false,
+  });
+
+  items.push({
+    id: "action-declarative-plan",
+    value: "__action_declarative_plan__",
+    label: "Plan / Apply",
+    hint: "Declarative infrastructure",
+    kind: "action",
+  });
+
+  items.push({
+    id: "action-declarative-status",
+    value: "__action_declarative_status__",
+    label: "Infra Status",
+    hint: "Live state from CLI tools",
+    kind: "action",
+  });
+
+  items.push({
+    id: "action-init-scaffold",
+    value: "__action_init_scaffold__",
+    label: "Init polter.yaml",
+    hint: "Generate from detected state",
+    kind: "action",
+  });
+
+  items.push({
+    id: "action-pipelines",
+    value: "__action_pipelines__",
+    label: "Pipelines",
+    hint: "Multi-step workflows",
+    kind: "action",
+  });
+
+  items.push({
+    id: "action-tools",
+    value: "__action_tools__",
+    label: "Tool Status",
+    hint: "Check installed CLI tools",
+    kind: "action",
+  });
+
+  items.push({
+    id: "action-config",
+    value: "__action_config__",
+    label: "Project Config",
+    hint: "Tool refs and settings",
+    kind: "action",
+  });
+
+  items.push({
+    id: "action-custom",
+    value: "__action_custom__",
+    label: "Custom Command",
+    hint: "Free-form args",
+    kind: "action",
+  });
+
+  items.push({
+    id: "action-update",
+    value: "__action_update__",
+    label: "Update Polter",
+    kind: "action",
+  });
+
+  items.push({
+    id: "action-exit",
+    value: "__action_exit__",
+    label: "Exit",
+    kind: "action",
+  });
 
   return items;
 }
