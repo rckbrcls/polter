@@ -2,6 +2,7 @@ import type { SelectItem } from "../components/SelectList.js";
 import type { Feature } from "../data/types.js";
 import { features } from "../data/features.js";
 import { getCommandValue, findCommandByValue } from "../data/commands/index.js";
+import { getToolDisplayName } from "../lib/toolResolver.js";
 
 interface BuildHomeItemsParams {
   activeFeature: Feature;
@@ -24,14 +25,14 @@ export function buildPinnedOnlyItems(
   if (pinnedCommands.length > 0) {
     for (const command of pinnedCommands) {
       const cmdDef = findCommandByValue(command);
-      const toolHint = cmdDef ? cmdDef.tool : "supabase";
+      const toolDisplay = cmdDef ? getToolDisplayName(cmdDef.tool) : "supabase";
       const labelHint = cmdDef?.hint;
 
       items.push({
         id: `command:${command}`,
         value: command,
-        label: cmdDef ? `${cmdDef.tool} ${command}` : command,
-        hint: [toolHint, labelHint].filter(Boolean).join(" · "),
+        label: cmdDef ? `${toolDisplay} ${command}` : command,
+        hint: [toolDisplay, labelHint].filter(Boolean).join(" · "),
         icon: "📌",
         kind: "command",
         rightActionable: true,
@@ -44,13 +45,13 @@ export function buildPinnedOnlyItems(
     for (const runCommand of pinnedRuns) {
       const baseCommand = runCommand.split(" ").filter(Boolean)[0] ?? "";
       const cmdDef = findCommandByValue(baseCommand);
-      const toolHint = cmdDef ? cmdDef.tool : "supabase";
+      const toolDisplay = cmdDef ? getToolDisplayName(cmdDef.tool) : "supabase";
 
       items.push({
         id: `run:${runCommand}`,
         value: runCommand,
-        label: cmdDef ? `${cmdDef.tool} ${runCommand}` : runCommand,
-        hint: toolHint,
+        label: cmdDef ? `${toolDisplay} ${runCommand}` : runCommand,
+        hint: toolDisplay,
         icon: "▶",
         kind: "run",
         rightActionable: true,
@@ -95,8 +96,8 @@ export function buildHomeItems({
     });
   }
 
-  const toolOrder: Record<string, number> = { supabase: 0, vercel: 1, gh: 2, git: 3 };
-  const toolIcons: Record<string, string> = { supabase: "🟢", vercel: "⚪", gh: "🔵", git: "🟠" };
+  const toolOrder: Record<string, number> = { supabase: 0, vercel: 1, gh: 2, git: 3, pkg: 4 };
+  const toolIcons: Record<string, string> = { supabase: "🟢", vercel: "⚪", gh: "🔵", git: "🟠", pkg: "📦" };
 
   const grouped = new Map<string, typeof activeFeature.commands>();
   for (const cmd of activeFeature.commands) {
@@ -116,7 +117,7 @@ export function buildHomeItems({
     items.push({
       id: `tool-header-${tool}`,
       value: `__tool_header_${tool}__`,
-      label: `${icon} ${tool}`,
+      label: `${icon} ${getToolDisplayName(tool as import("../data/types.js").CliToolId)}`,
       kind: "header",
       selectable: false,
     });

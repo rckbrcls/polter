@@ -16,6 +16,8 @@ export function useCommand(
 ) {
   const [status, setStatus] = useState<CommandStatus>("idle");
   const [result, setResult] = useState<RunResult | null>(null);
+  const [partialStdout, setPartialStdout] = useState("");
+  const [partialStderr, setPartialStderr] = useState("");
   const abortRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
@@ -28,11 +30,13 @@ export function useCommand(
   const run = useCallback(async (args: string[]) => {
     setStatus("running");
     setResult(null);
+    setPartialStdout("");
+    setPartialStderr("");
 
     let resolvedExecution: string | CommandExecution;
 
     if (typeof execution === "string") {
-      const toolIds: string[] = ["supabase", "gh", "vercel"];
+      const toolIds: string[] = ["supabase", "gh", "vercel", "git", "pkg"];
       if (toolIds.includes(execution)) {
         const resolved = resolveToolCommand(execution as CliToolId, cwd);
         resolvedExecution = { command: resolved.command, env: resolved.env };
@@ -43,7 +47,11 @@ export function useCommand(
       resolvedExecution = execution;
     }
 
-    const runOpts = options?.quiet ? { quiet: true } : undefined;
+    const onData = (stdout: string, stderr: string) => {
+      setPartialStdout(stdout);
+      setPartialStderr(stderr);
+    };
+    const runOpts = { quiet: options?.quiet, onData };
     const handle = runCommand(resolvedExecution, args, cwd, runOpts);
     abortRef.current = handle.abort;
     const res = await handle.promise;
@@ -67,7 +75,9 @@ export function useCommand(
   const reset = useCallback(() => {
     setStatus("idle");
     setResult(null);
+    setPartialStdout("");
+    setPartialStderr("");
   }, []);
 
-  return { status, result, run, reset, abort };
+  return { status, result, run, reset, abort, partialStdout, partialStderr };
 }

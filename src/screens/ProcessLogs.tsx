@@ -3,6 +3,7 @@ import { Box, Text, useInput } from "ink";
 import { spawn } from "node:child_process";
 import { inkColors } from "../theme.js";
 import { getProcessOutput, listProcesses, stopProcess, type ProcessInfo } from "../lib/processManager.js";
+import { ScrollableBox } from "../components/ScrollableBox.js";
 
 interface ProcessLogsProps {
   processId: string;
@@ -42,12 +43,12 @@ export function ProcessLogs({
   useEffect(() => {
     const refresh = () => {
       try {
-        const output = getProcessOutput(processId, logBoxHeight, stream);
+        const output = getProcessOutput(processId, 1000, stream);
         const combined = stream === "stderr"
           ? output.stderr
           : stream === "stdout"
             ? output.stdout
-            : [...output.stdout, ...output.stderr].slice(-logBoxHeight);
+            : [...output.stdout, ...output.stderr].slice(-1000);
         setLines(combined);
       } catch {
         setLines([`Process "${processId}" not found`]);
@@ -60,7 +61,7 @@ export function ProcessLogs({
     refresh();
     const interval = setInterval(refresh, 1000);
     return () => clearInterval(interval);
-  }, [processId, logBoxHeight, stream]);
+  }, [processId, stream]);
 
   useEffect(() => {
     if (feedback) {
@@ -134,17 +135,20 @@ export function ProcessLogs({
         borderStyle="round"
         borderColor={inkColors.accent}
         paddingX={1}
-        height={logBoxHeight + 2}
         width={cardWidth}
-        overflowY="hidden"
       >
-        {lines.length === 0 ? (
-          <Text dimColor>No output yet...</Text>
-        ) : (
-          lines.map((line, i) => (
-            <Text key={i} wrap="truncate">{line}</Text>
-          ))
-        )}
+        <ScrollableBox
+          height={logBoxHeight}
+          isActive={isInputActive}
+          autoScrollToBottom
+        >
+          {lines.length === 0
+            ? [<Text key="empty" dimColor>No output yet...</Text>]
+            : lines.map((line, i) => (
+                <Text key={i} wrap="truncate">{line}</Text>
+              ))
+          }
+        </ScrollableBox>
       </Box>
 
       {/* Feedback */}
@@ -157,6 +161,7 @@ export function ProcessLogs({
       {/* Footer */}
       <Box marginTop={1} gap={2}>
         <Text dimColor>stream:[<Text bold color={inkColors.accent}>{stream}</Text>]</Text>
+        <Text dimColor>↑↓:scroll</Text>
         <Text dimColor>s:toggle</Text>
         <Text dimColor>x:stop</Text>
         <Text dimColor>c:copy</Text>

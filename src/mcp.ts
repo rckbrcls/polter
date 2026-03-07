@@ -23,11 +23,14 @@ import {
   applyActions,
   detectPkgManager,
   resolvePkgArgs,
+  translateCommand,
   startProcess,
   stopProcess,
   listProcesses,
   getProcessOutput,
   generateProcessId,
+  findProcessesByCwd,
+  findRunningByCommand,
   type CliToolId,
   type PipelineStep,
 } from "./api.js";
@@ -396,8 +399,77 @@ function pkgRunHelper(base: string[], extraArgs: string[] = []) {
 }
 
 server.tool(
+  "polter_run_script_bg",
+  "Start a package.json script as a tracked background process using the detected package manager (npm/pnpm/yarn/bun). The process output is captured and can be read with polter_logs. Use polter_ps to check status.",
+  {
+    script: z.string().describe("Script name from package.json (e.g. 'dev', 'build', 'test')"),
+    args: z.array(z.string()).optional().describe("Extra arguments to pass to the script"),
+    cwd: z.string().optional().describe("Working directory. Defaults to current directory."),
+  },
+  async ({ script, args: extraArgs, cwd: cwdArg }) => {
+    const cwd = cwdArg ?? process.cwd();
+    const pkgPath = join(cwd, "package.json");
+
+    if (!existsSync(pkgPath)) {
+      return {
+        content: [{ type: "text" as const, text: JSON.stringify({ error: "No package.json found in " + cwd }) }],
+        isError: true,
+      };
+    }
+
+    const raw = JSON.parse(readFileSync(pkgPath, "utf-8"));
+    const scripts: Record<string, string> = raw.scripts ?? {};
+    if (!scripts[script]) {
+      return {
+        content: [{ type: "text" as const, text: JSON.stringify({ error: `Script "${script}" not found. Available: ${Object.keys(scripts).join(", ")}` }) }],
+        isError: true,
+      };
+    }
+
+    const mgr = detectPkgManager(cwd);
+    try {
+      const translated = translateCommand(["run", script, ...(extraArgs ?? [])], mgr.id);
+      const existing = findRunningByCommand(cwd, mgr.command, translated.args);
+      if (existing) {
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify({
+              alreadyRunning: true,
+              process: existing,
+              output: getProcessOutput(existing.id, 20),
+            }, null, 2),
+          }],
+        };
+      }
+
+      const id = generateProcessId(mgr.command, translated.args);
+      const info = startProcess(id, mgr.command, translated.args, cwd);
+      await new Promise((r) => setTimeout(r, 500));
+
+      return {
+        content: [{
+          type: "text" as const,
+          text: JSON.stringify({
+            success: true,
+            process: info,
+            output: getProcessOutput(id, 20),
+            packageManager: mgr.id,
+          }, null, 2),
+        }],
+      };
+    } catch (err) {
+      return {
+        content: [{ type: "text" as const, text: JSON.stringify({ error: (err as Error).message }) }],
+        isError: true,
+      };
+    }
+  },
+);
+
+server.tool(
   "polter_pkg_build",
-  "Run the build script from package.json using the detected package manager.",
+  "Run the build script from package.json using the detected package manager (npm/pnpm/yarn/bun).",
   {},
   async () => {
     const result = await pkgRunHelper(["run", "build"]);
@@ -409,7 +481,7 @@ server.tool(
 
 server.tool(
   "polter_pkg_publish",
-  "Publish the package to the npm registry.",
+  "Publish the package to the registry using the detected package manager (npm/pnpm/yarn/bun).",
   {
     tag: z.string().optional().describe("Dist-tag (e.g. 'next', 'beta')"),
     dryRun: z.boolean().optional().describe("Simulate publish without uploading"),
@@ -434,7 +506,7 @@ server.tool(
 
 server.tool(
   "polter_pkg_install",
-  "Install dependencies. Optionally install specific packages.",
+  "Install dependencies using the detected package manager (npm/pnpm/yarn/bun). Optionally install specific packages.",
   {
     packages: z.array(z.string()).optional().describe("Specific packages to install"),
     dev: z.boolean().optional().describe("Install as dev dependency"),
@@ -452,7 +524,7 @@ server.tool(
 
 server.tool(
   "polter_pkg_run_script",
-  "Run a script defined in package.json.",
+  "Run a script defined in package.json using the detected package manager (npm/pnpm/yarn/bun).",
   {
     script: z.string().describe("Script name to run"),
     args: z.array(z.string()).optional().describe("Extra arguments"),
@@ -467,7 +539,7 @@ server.tool(
 
 server.tool(
   "polter_pkg_version_bump",
-  "Bump the package version (semver).",
+  "Bump the package version (semver) using the detected package manager (npm/pnpm/yarn/bun).",
   {
     type: z.enum(["patch", "minor", "major"]).describe("Version bump type"),
   },
@@ -481,7 +553,7 @@ server.tool(
 
 server.tool(
   "polter_pkg_audit",
-  "Run a security audit on dependencies.",
+  "Run a security audit on dependencies using the detected package manager (npm/pnpm/yarn/bun).",
   {
     fix: z.boolean().optional().describe("Attempt to fix vulnerabilities"),
   },
@@ -503,7 +575,7 @@ server.tool(
 
 server.tool(
   "polter_pkg_info",
-  "Get information about a package from the registry.",
+  "Get information about a package from the registry using the detected package manager (npm/pnpm/yarn/bun).",
   {
     package: z.string().describe("Package name to look up"),
   },
@@ -605,6 +677,114 @@ server.tool(
         isError: true,
       };
     }
+  },
+);
+
+// --- polter_smart_start ---
+server.tool(
+  "polter_smart_start",
+  "Smart process starter: reads package.json, auto-detects package manager, starts a script as a background process. If script is omitted, lists available scripts. If already running, returns current info and recent logs instead of duplicating.",
+  {
+    script: z.string().optional().describe("Script name from package.json (e.g. 'dev', 'build')"),
+    cwd: z.string().optional().describe("Repository directory. Defaults to current directory."),
+    tail: z.number().optional().default(20).describe("Number of initial log lines to return"),
+  },
+  async ({ script, cwd: cwdArg, tail }) => {
+    const cwd = cwdArg ?? process.cwd();
+    const pkgPath = join(cwd, "package.json");
+
+    if (!existsSync(pkgPath)) {
+      return {
+        content: [{ type: "text" as const, text: JSON.stringify({ error: "No package.json found in " + cwd }) }],
+        isError: true,
+      };
+    }
+
+    const raw = JSON.parse(readFileSync(pkgPath, "utf-8"));
+    const scripts: Record<string, string> = raw.scripts ?? {};
+
+    if (!script) {
+      return {
+        content: [{ type: "text" as const, text: JSON.stringify({ scripts: Object.keys(scripts) }, null, 2) }],
+      };
+    }
+
+    if (!scripts[script]) {
+      return {
+        content: [{ type: "text" as const, text: JSON.stringify({ error: `Script "${script}" not found. Available: ${Object.keys(scripts).join(", ")}` }) }],
+        isError: true,
+      };
+    }
+
+    const mgr = detectPkgManager(cwd);
+    const runArgs = ["run", script];
+
+    const existing = findRunningByCommand(cwd, mgr.command, runArgs);
+    if (existing) {
+      return {
+        content: [{
+          type: "text" as const,
+          text: JSON.stringify({
+            alreadyRunning: true,
+            process: existing,
+            output: getProcessOutput(existing.id, tail),
+          }, null, 2),
+        }],
+      };
+    }
+
+    try {
+      const id = generateProcessId(mgr.command, runArgs);
+      const info = startProcess(id, mgr.command, runArgs, cwd);
+      await new Promise((r) => setTimeout(r, 500));
+      return {
+        content: [{
+          type: "text" as const,
+          text: JSON.stringify({
+            alreadyRunning: false,
+            process: info,
+            output: getProcessOutput(id, tail),
+            packageManager: mgr.id,
+          }, null, 2),
+        }],
+      };
+    } catch (err) {
+      return {
+        content: [{ type: "text" as const, text: JSON.stringify({ error: (err as Error).message }) }],
+        isError: true,
+      };
+    }
+  },
+);
+
+// --- polter_find_process ---
+server.tool(
+  "polter_find_process",
+  "Find all tracked processes for a repository directory. Returns process info with recent logs embedded. No need to know process IDs — just point to the repo.",
+  {
+    cwd: z.string().optional().describe("Repository directory. Defaults to current directory."),
+    filter: z.string().optional().describe("Filter by substring in command+args"),
+    tail: z.number().optional().default(20).describe("Number of log lines per process"),
+  },
+  async ({ cwd: cwdArg, filter, tail }) => {
+    const cwd = cwdArg ?? process.cwd();
+    let processes = findProcessesByCwd(cwd);
+
+    if (filter) {
+      const f = filter.toLowerCase();
+      processes = processes.filter((proc) =>
+        (proc.command + " " + proc.args.join(" ")).toLowerCase().includes(f),
+      );
+    }
+
+    const result = processes.map((proc) => ({
+      process: proc,
+      output: getProcessOutput(proc.id, tail),
+    }));
+
+    return {
+      content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }],
+    };
   },
 );
 

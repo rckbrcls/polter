@@ -75,4 +75,5 @@ export type Screen =
   | "process-logs"
   | "declarative-plan"
   | "declarative-status"
-  | "init-scaffold";
+  | "init-scaffold"
+  | "script-picker";

@@ -1,8 +1,7 @@
 import type { CommandDef } from "../types.js";
 
 export const pkgCommands: CommandDef[] = [
-  // Build & Publish
-  { id: "pkg:build",         tool: "pkg", base: ["run", "build"],      label: "build",         hint: "Run build script" },
+  // Publish & Version
   { id: "pkg:publish",       tool: "pkg", base: ["publish"],           label: "publish",       hint: "Publish package to registry" },
   { id: "pkg:pack",          tool: "pkg", base: ["pack"],              label: "pack",          hint: "Create tarball from package" },
   { id: "pkg:version:patch", tool: "pkg", base: ["version", "patch"],  label: "version patch", hint: "Bump patch version" },
@@ -24,8 +23,7 @@ export const pkgCommands: CommandDef[] = [
   { id: "pkg:config:list", tool: "pkg", base: ["config", "list"], label: "config list", hint: "Show config" },
   { id: "pkg:whoami",      tool: "pkg", base: ["whoami"],         label: "whoami",      hint: "Show logged-in user" },
 
-  // Scripts & Info
-  { id: "pkg:run",    tool: "pkg", base: ["run"],    label: "run",    hint: "Run a package script" },
+  // Info & Registry
   { id: "pkg:info",   tool: "pkg", base: ["info"],   label: "info",   hint: "Show package info" },
   { id: "pkg:search", tool: "pkg", base: ["search"], label: "search", hint: "Search packages in registry" },
   { id: "pkg:init",   tool: "pkg", base: ["init"],   label: "init",   hint: "Initialize a new package.json" },

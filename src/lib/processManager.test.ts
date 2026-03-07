@@ -7,6 +7,8 @@ import {
   isProcessRunning,
   removeProcess,
   generateProcessId,
+  findProcessesByCwd,
+  findRunningByCommand,
   _resetForTests,
   createRingBuffer,
   appendToBuffer,
@@ -146,5 +148,50 @@ describe("removeProcess", () => {
   it("throws when removing a running process", () => {
     startProcess("rm-run", "sleep", ["60"]);
     expect(() => removeProcess("rm-run")).toThrow(/Stop it first/);
+  });
+});
+
+describe("findProcessesByCwd", () => {
+  it("filters processes by cwd", () => {
+    startProcess("cwd-a1", "sleep", ["60"], "/tmp/test-a");
+    startProcess("cwd-a2", "sleep", ["61"], "/tmp/test-a");
+    startProcess("cwd-b1", "sleep", ["62"], "/tmp/test-b");
+
+    const result = findProcessesByCwd("/tmp/test-a");
+    expect(result.length).toBe(2);
+    expect(result.every((p) => p.cwd === "/tmp/test-a")).toBe(true);
+  });
+
+  it("normalizes trailing slash", () => {
+    startProcess("cwd-slash", "sleep", ["60"], "/tmp/test-slash");
+
+    const result = findProcessesByCwd("/tmp/test-slash/");
+    expect(result.length).toBe(1);
+    expect(result[0].id).toBe("cwd-slash");
+  });
+});
+
+describe("findRunningByCommand", () => {
+  it("finds a running process by command and args", () => {
+    startProcess("find-cmd", "echo", ["hello", "world"], "/tmp/test-c");
+
+    const found = findRunningByCommand("/tmp/test-c", "echo", ["hello", "world"]);
+    expect(found).toBeDefined();
+    expect(found!.id).toBe("find-cmd");
+  });
+
+  it("returns undefined for different args", () => {
+    startProcess("find-diff", "echo", ["hello"], "/tmp/test-d");
+
+    const found = findRunningByCommand("/tmp/test-d", "echo", ["goodbye"]);
+    expect(found).toBeUndefined();
+  });
+
+  it("returns undefined after process exits", async () => {
+    startProcess("find-exit", "echo", ["done"], "/tmp/test-e");
+    await new Promise((r) => setTimeout(r, 500));
+
+    const found = findRunningByCommand("/tmp/test-e", "echo", ["done"]);
+    expect(found).toBeUndefined();
   });
 });

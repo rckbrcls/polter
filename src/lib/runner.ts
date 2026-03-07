@@ -97,7 +97,7 @@ export function runCommand(
   execution: string | CommandExecution,
   args: string[],
   cwd: string = process.cwd(),
-  options?: { quiet?: boolean },
+  options?: { quiet?: boolean; onData?: (stdout: string, stderr: string) => void },
 ): RunHandle {
   let stdout = "";
   let stderr = "";
@@ -120,12 +120,14 @@ export function runCommand(
       const text = data.toString();
       stdout += text;
       if (!options?.quiet) process.stdout.write(text);
+      options?.onData?.(stdout, stderr);
     });
 
     child.stderr?.on("data", (data: Buffer) => {
       const text = data.toString();
       stderr += text;
       if (!options?.quiet) process.stderr.write(text);
+      options?.onData?.(stdout, stderr);
     });
 
     child.on("error", (err: Error) => {

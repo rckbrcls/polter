@@ -137,8 +137,6 @@ export const features: Feature[] = [
       "pkg:outdated",
       "pkg:audit",
       "pkg:ls",
-      "pkg:build",
-      "pkg:run",
       "pkg:publish",
       "pkg:pack",
       "pkg:version:patch",

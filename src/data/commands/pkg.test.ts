@@ -28,6 +28,6 @@ describe("pkgCommands", () => {
   });
 
   it("has expected number of commands", () => {
-    expect(pkgCommands.length).toBe(21);
+    expect(pkgCommands.length).toBe(19);
   });
 });

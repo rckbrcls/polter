@@ -5,13 +5,13 @@ export { getFlagsForTool, toolFlags } from "./data/flags.js";
 
 // Execution
 export { runCommand, type RunResult, type CommandExecution } from "./lib/runner.js";
-export { resolveToolCommand, getToolInfo, type ToolInfo } from "./lib/toolResolver.js";
+export { resolveToolCommand, getToolInfo, getToolDisplayName, type ToolInfo } from "./lib/toolResolver.js";
 
 // Package Manager
 export { detectPkgManager, translateCommand, resolvePkgArgs, type PkgManagerId, type PkgManagerInfo } from "./lib/pkgManager.js";
 
 // Process Manager
-export { startProcess, stopProcess, listProcesses, getProcessOutput, isProcessRunning, removeProcess, generateProcessId, type ProcessInfo, type ProcessOutput } from "./lib/processManager.js";
+export { startProcess, stopProcess, listProcesses, getProcessOutput, isProcessRunning, removeProcess, generateProcessId, findProcessesByCwd, findRunningByCommand, type ProcessInfo, type ProcessOutput } from "./lib/processManager.js";
 
 // Pipelines
 export { executePipeline, type StepResult, type PipelineProgress } from "./pipeline/engine.js";

@@ -16,6 +16,21 @@ export interface ToolInfo {
   version?: string;
 }
 
+export function getToolDisplayName(toolId: CliToolId, cwd: string = process.cwd()): string {
+  if (toolId === "pkg") {
+    const mgr = detectPkgManager(cwd);
+    return mgr.id;
+  }
+  const names: Record<CliToolId, string> = {
+    supabase: "supabase",
+    gh: "github",
+    vercel: "vercel",
+    git: "git",
+    pkg: "npm",
+  };
+  return names[toolId];
+}
+
 export function resolveToolCommand(
   toolId: CliToolId,
   cwd: string = process.cwd(),

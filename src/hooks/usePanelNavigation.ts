@@ -11,6 +11,7 @@ export type PanelView =
   | "self-update"
   | "custom-command"
   | "processes"
+  | "scripts"
   | "declarative";
 
 export interface PanelNavState {
@@ -55,6 +56,7 @@ export function usePanelNavigation() {
       config: "config",
       "self-update": "self-update",
       processes: "processes",
+      scripts: "scripts",
       declarative: "declarative",
     };
 

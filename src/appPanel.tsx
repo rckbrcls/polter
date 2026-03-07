@@ -31,6 +31,7 @@ import { DeclarativeHome } from "./screens/DeclarativeHome.js";
 import { DeclarativePlan } from "./screens/DeclarativePlan.js";
 import { DeclarativeStatus } from "./screens/DeclarativeStatus.js";
 import { InitScaffold } from "./screens/InitScaffold.js";
+import { ScriptPicker } from "./screens/ScriptPicker.js";
 import { getFeatureById } from "./data/features.js";
 import { colors } from "./theme.js";
 import type { PanelNavState } from "./hooks/usePanelNavigation.js";
@@ -53,6 +54,7 @@ const screenLabels: Record<string, string> = {
   "declarative-plan": "Plan/Apply",
   "declarative-status": "Status",
   "init-scaffold": "Init",
+  "script-picker": "Scripts",
 };
 
 function buildBreadcrumb(nav: PanelNavState): string {
@@ -84,6 +86,9 @@ function buildBreadcrumb(nav: PanelNavState): string {
       break;
     case "processes":
       base = "\uD83D\uDCBB Processes";
+      break;
+    case "scripts":
+      base = "\uD83D\uDCDC Scripts";
       break;
     case "declarative":
       base = "\uD83C\uDFD7\uFE0F Infrastructure";
@@ -203,6 +208,7 @@ export function AppPanel(): React.ReactElement {
       case "config": return "config";
       case "self-update": return "self-update";
       case "processes": return "processes";
+      case "scripts": return "scripts";
       case "declarative": return "declarative";
       default: return nav.featureId;
     }
@@ -321,6 +327,18 @@ export function AppPanel(): React.ReactElement {
           />
         );
 
+      case "scripts":
+        return (
+          <ScriptPicker
+            onNavigate={nav.navigateInner}
+            onBack={focus.focusSidebar}
+            width={mainContentWidth - 2}
+            height={mainContentHeight}
+            panelMode
+            isInputActive={focus.isMainFocused}
+          />
+        );
+
       case "declarative":
         return (
           <DeclarativeHome
@@ -412,6 +430,7 @@ export function AppPanel(): React.ReactElement {
             key={`${nav.view}-${nav.innerParams.tool}-${(nav.innerParams.args ?? []).join("-")}`}
             args={nav.innerParams.args ?? []}
             tool={nav.innerParams.tool}
+            rawCommand={nav.innerParams.rawCommand}
             interactive={nav.innerParams.interactive}
             onBack={nav.goBackInner}
             onHome={nav.goHomeInner}
@@ -559,6 +578,18 @@ export function AppPanel(): React.ReactElement {
           <InitScaffold
             onBack={nav.goBackInner}
             onNavigate={nav.navigateInner}
+            width={w}
+            height={mainContentHeight}
+            panelMode
+            isInputActive={isActive}
+          />
+        );
+
+      case "script-picker":
+        return (
+          <ScriptPicker
+            onNavigate={nav.navigateInner}
+            onBack={nav.goBackInner}
             width={w}
             height={mainContentHeight}
             panelMode

@@ -21,6 +21,7 @@ import { ProcessLogs } from "./screens/ProcessLogs.js";
 import { DeclarativePlan } from "./screens/DeclarativePlan.js";
 import { DeclarativeStatus } from "./screens/DeclarativeStatus.js";
 import { InitScaffold } from "./screens/InitScaffold.js";
+import { ScriptPicker } from "./screens/ScriptPicker.js";
 import { colors } from "./theme.js";
 
 export function AppClassic(): React.ReactElement {
@@ -76,6 +77,7 @@ export function AppClassic(): React.ReactElement {
           <CommandExecution
             args={params.args ?? []}
             tool={params.tool}
+            rawCommand={params.rawCommand}
             onBack={goBack}
             onExit={handleExit}
             onRunSuggestion={(sugTool, sugArgs) => {
@@ -128,6 +130,9 @@ export function AppClassic(): React.ReactElement {
 
       case "init-scaffold":
         return <InitScaffold onBack={goBack} onNavigate={navigate} width={width} height={height} />;
+
+      case "script-picker":
+        return <ScriptPicker onNavigate={navigate} onBack={goBack} width={width} height={height} />;
 
       default:
         return (

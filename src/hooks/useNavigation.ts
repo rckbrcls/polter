@@ -13,6 +13,7 @@ export interface NavigationParams {
   pipelineId?: string;
   processId?: string;
   interactive?: boolean;
+  rawCommand?: string;
 }
 
 export interface NavigationState {

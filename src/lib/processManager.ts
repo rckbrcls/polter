@@ -255,6 +255,29 @@ export function removeProcess(id: string): void {
   registry.delete(id);
 }
 
+export function findProcessesByCwd(cwd: string): ProcessInfo[] {
+  const normalized = cwd.replace(/\/+$/, "");
+  return Array.from(registry.values())
+    .filter((proc) => proc.cwd.replace(/\/+$/, "") === normalized)
+    .map(toProcessInfo);
+}
+
+export function findRunningByCommand(cwd: string, command: string, args: string[]): ProcessInfo | undefined {
+  const normalized = cwd.replace(/\/+$/, "");
+  const argsStr = args.join(" ");
+  for (const proc of registry.values()) {
+    if (
+      proc.cwd.replace(/\/+$/, "") === normalized &&
+      proc.status === "running" &&
+      proc.command === command &&
+      proc.args.join(" ") === argsStr
+    ) {
+      return toProcessInfo(proc);
+    }
+  }
+  return undefined;
+}
+
 // --- Helpers ---
 
 function toProcessInfo(proc: TrackedProcess): ProcessInfo {

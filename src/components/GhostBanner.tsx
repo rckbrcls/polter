@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Box, Text } from "ink";
 import { ghost as ghostData, inkColors, VERSION } from "../theme.js";
 import { getToolLinkInfo } from "../lib/toolResolver.js";
 import { getMcpStatusInfo } from "../lib/mcpInstaller.js";
+import { listProcesses } from "../lib/processManager.js";
 import { toolColors } from "./ToolBadge.js";
 
 interface GhostBannerProps {
@@ -22,6 +23,27 @@ const McpBadge = React.memo(function McpBadge(): React.ReactElement {
     </Box>
   );
 });
+
+function ProcessBadge(): React.ReactElement {
+  const [count, setCount] = useState(() => {
+    return listProcesses().filter((p) => p.status === "running").length;
+  });
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      const c = listProcesses().filter((p) => p.status === "running").length;
+      setCount(c);
+    }, 2000);
+    return () => clearInterval(id);
+  }, []);
+
+  const color = count > 0 ? "#3ECF8E" : inkColors.accent;
+  return (
+    <Box borderStyle="round" borderColor={color} borderDimColor={count === 0}>
+      <Text color={color} dimColor={count === 0}>runs:{count}</Text>
+    </Box>
+  );
+}
 
 const ToolStatusBadges = React.memo(function ToolStatusBadges(): React.ReactElement {
   const tools = (["supabase", "gh", "vercel"] as const).map((id) => getToolLinkInfo(id));
@@ -47,10 +69,13 @@ export function GhostBanner({ width = 80, compact = false }: GhostBannerProps): 
     if (width < 60) {
       return (
         <Box borderStyle="round" borderColor={inkColors.accent} flexDirection="column" alignItems="flex-start">
-          <Box borderStyle="round" borderColor={inkColors.accent} paddingX={1} gap={2}>
-            <Text color={inkColors.accent} bold>POLTER</Text>
-            <Text dimColor>v{VERSION}</Text>
-            <Text color="yellow">alpha</Text>
+          <Box gap={1}>
+            <Box borderStyle="round" borderColor={inkColors.accent} paddingX={1} gap={2}>
+              <Text color={inkColors.accent} bold>POLTER</Text>
+              <Text dimColor>v{VERSION}</Text>
+              <Text color="yellow">alpha</Text>
+            </Box>
+            <ProcessBadge />
           </Box>
           <Box borderStyle="round" borderColor={inkColors.accent} paddingX={1}>
             <ToolStatusBadges />
@@ -68,10 +93,13 @@ export function GhostBanner({ width = 80, compact = false }: GhostBannerProps): 
           ))}
         </Box>
         <Box flexDirection="column" alignItems="flex-start">
-          <Box borderStyle="round" borderColor={inkColors.accent} paddingX={1} gap={2}>
-            <Text color={inkColors.accent} bold>POLTER</Text>
-            <Text dimColor>v{VERSION}</Text>
-            <Text color="yellow">alpha</Text>
+          <Box gap={1}>
+            <Box borderStyle="round" borderColor={inkColors.accent} paddingX={1} gap={2}>
+              <Text color={inkColors.accent} bold>POLTER</Text>
+              <Text dimColor>v{VERSION}</Text>
+              <Text color="yellow">alpha</Text>
+            </Box>
+            <ProcessBadge />
           </Box>
           <Box borderStyle="round" borderColor={inkColors.accent} paddingX={1}>
             <ToolStatusBadges />
@@ -84,10 +112,13 @@ export function GhostBanner({ width = 80, compact = false }: GhostBannerProps): 
   if (width < 50) {
     return (
       <Box marginBottom={1} borderStyle="round" borderColor={inkColors.accent} flexDirection="column" alignItems="flex-start">
-        <Box borderStyle="round" borderColor={inkColors.accent} paddingX={1} gap={2}>
-          <Text color={inkColors.accent} bold>POLTER</Text>
-          <Text dimColor>v{VERSION}</Text>
-          <Text color="yellow">alpha</Text>
+        <Box gap={1}>
+          <Box borderStyle="round" borderColor={inkColors.accent} paddingX={1} gap={2}>
+            <Text color={inkColors.accent} bold>POLTER</Text>
+            <Text dimColor>v{VERSION}</Text>
+            <Text color="yellow">alpha</Text>
+          </Box>
+          <ProcessBadge />
         </Box>
         <Box borderStyle="round" borderColor={inkColors.accent} paddingX={1}>
           <ToolStatusBadges />
@@ -105,10 +136,13 @@ export function GhostBanner({ width = 80, compact = false }: GhostBannerProps): 
         borderColor={inkColors.accent}
         marginBottom={1}
       >
-        <Box borderStyle="round" borderColor={inkColors.accent} paddingX={1} gap={2}>
-          <Text color={inkColors.accent} bold>POLTER</Text>
-          <Text dimColor>v{VERSION}</Text>
-          <Text color="yellow">alpha</Text>
+        <Box gap={1}>
+          <Box borderStyle="round" borderColor={inkColors.accent} paddingX={1} gap={2}>
+            <Text color={inkColors.accent} bold>POLTER</Text>
+            <Text dimColor>v{VERSION}</Text>
+            <Text color="yellow">alpha</Text>
+          </Box>
+          <ProcessBadge />
         </Box>
         <Box borderStyle="round" borderColor={inkColors.accent} paddingX={1}>
           <ToolStatusBadges />
@@ -129,10 +163,13 @@ export function GhostBanner({ width = 80, compact = false }: GhostBannerProps): 
       </Box>
 
       <Box flexDirection="column" alignItems="flex-start">
-        <Box borderStyle="round" borderColor={inkColors.accent} paddingX={1} gap={2}>
-          <Text color={inkColors.accent} bold>POLTER</Text>
-          <Text dimColor>v{VERSION}</Text>
-          <Text color="yellow">alpha</Text>
+        <Box gap={1}>
+          <Box borderStyle="round" borderColor={inkColors.accent} paddingX={1} gap={2}>
+            <Text color={inkColors.accent} bold>POLTER</Text>
+            <Text dimColor>v{VERSION}</Text>
+            <Text color="yellow">alpha</Text>
+          </Box>
+          <ProcessBadge />
         </Box>
         <Box borderStyle="round" borderColor={inkColors.accent} paddingX={1}>
           <ToolStatusBadges />

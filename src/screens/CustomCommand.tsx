@@ -16,7 +16,7 @@ interface CustomCommandProps {
   isInputActive?: boolean;
 }
 
-type Phase = "tool-select" | "input";
+type Phase = "tool-select" | "input" | "free-input";
 
 export function CustomCommand({
   onNavigate,
@@ -36,6 +36,8 @@ export function CustomCommand({
       { value: "gh", label: "GitHub CLI", hint: "gh ...", kind: "action" as const },
       { value: "vercel", label: "Vercel CLI", hint: "vercel ...", kind: "action" as const },
       { value: "git", label: "Git", hint: "git ...", kind: "action" as const },
+      { value: "__free_header__", label: "", kind: "header" as const, selectable: false },
+      { value: "free", label: "⌨ Free command", hint: "any command", kind: "action" as const },
       ...(!panelMode ? [{ value: "__back__", label: "← Back" }] : []),
     ];
 
@@ -57,6 +59,10 @@ export function CustomCommand({
               onBack();
               return;
             }
+            if (value === "free") {
+              setPhase("free-input");
+              return;
+            }
             setSelectedTool(value as CliToolId);
             setPhase("input");
           }}
@@ -70,6 +76,42 @@ export function CustomCommand({
         />
 
         {!panelMode && <StatusBar hint="↑↓ navigate · Enter select · Esc back" width={width} />}
+      </Box>
+    );
+  }
+
+  if (phase === "free-input") {
+    return (
+      <Box flexDirection="column" paddingX={panelMode ? 1 : 0}>
+        {!panelMode && (
+          <Box marginBottom={1}>
+            <Text bold color={inkColors.accent}>
+              ⌨ Free Command
+            </Text>
+          </Box>
+        )}
+
+        <TextPrompt
+          label="Enter full command:"
+          placeholder="e.g. docker ps, curl -s http://..., make build"
+          validate={(val) => {
+            if (!val || !val.trim()) return "Please enter a command";
+            return undefined;
+          }}
+          onSubmit={(value) => {
+            const parts = value.split(" ").filter(Boolean);
+            const cmd = parts[0]!;
+            const args = parts.slice(1);
+            onNavigate("command-execution", { args, rawCommand: cmd });
+          }}
+          onCancel={() => setPhase("tool-select")}
+          arrowNavigation={panelMode}
+          isInputActive={isInputActive}
+          boxed={panelMode}
+          focused={isInputActive}
+        />
+
+        {!panelMode && <StatusBar hint="Type full command · Enter to execute · Esc to go back" width={width} />}
       </Box>
     );
   }
@@ -94,7 +136,7 @@ export function CustomCommand({
         }}
         onSubmit={(value) => {
           const args = value.split(" ").filter(Boolean);
-          onNavigate("flag-selection", { args, tool: selectedTool, interactive: true });
+          onNavigate("command-execution", { args, tool: selectedTool });
         }}
         onCancel={() => setPhase("tool-select")}
         arrowNavigation={panelMode}

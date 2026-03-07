@@ -13,11 +13,14 @@ import { isPinnedRun, togglePinnedRun } from "../data/pins.js";
 import { openInBrowser, copyToClipboard } from "../lib/clipboard.js";
 import { parseErrorSuggestions } from "../lib/errorSuggestions.js";
 import { inkColors, panel } from "../theme.js";
+import { getToolDisplayName, resolveToolCommand } from "../lib/toolResolver.js";
+import { startProcess, generateProcessId } from "../lib/processManager.js";
 import type { CliToolId } from "../data/types.js";
 
 interface CommandExecutionProps {
   args: string[];
   tool?: CliToolId;
+  rawCommand?: string;
   interactive?: boolean;
   onBack: () => void;
   onHome?: () => void;
@@ -32,6 +35,7 @@ interface CommandExecutionProps {
 type Phase =
   | "confirm"
   | "running"
+  | "background-started"
   | "success-pin-offer"
   | "success"
   | "error-menu";
@@ -39,6 +43,7 @@ type Phase =
 export function CommandExecution({
   args: initialArgs,
   tool = "supabase",
+  rawCommand,
   interactive = false,
   onBack,
   onHome,
@@ -52,7 +57,8 @@ export function CommandExecution({
   const [phase, setPhase] = useState<Phase>("confirm");
   const [currentArgs, setCurrentArgs] = useState(initialArgs);
   const [pinMessage, setPinMessage] = useState<string>();
-  const { status, result, run, reset, abort } = useCommand(tool, process.cwd(), {
+  const execution = rawCommand ?? tool;
+  const { status, result, run, reset, abort, partialStdout, partialStderr } = useCommand(execution, process.cwd(), {
     quiet: panelMode,
   });
   const { runInteractive } = useInteractiveRun();
@@ -60,7 +66,9 @@ export function CommandExecution({
   const [outputFocused, setOutputFocused] = useState(false);
   const [copyMessage, setCopyMessage] = useState<string>();
 
-  const cmdDisplay = `${tool} ${currentArgs.join(" ")}`;
+  const cmdDisplay = rawCommand
+    ? `${rawCommand} ${currentArgs.join(" ")}`.trim()
+    : `${getToolDisplayName(tool)} ${currentArgs.join(" ")}`;
   const runCommand = currentArgs.join(" ");
 
   useInput(
@@ -84,6 +92,13 @@ export function CommandExecution({
     },
     { isActive: isInputActive && phase === "error-menu" },
   );
+
+  useEffect(() => {
+    if (phase === "background-started") {
+      const t = setTimeout(() => onBack(), 1500);
+      return () => clearTimeout(t);
+    }
+  }, [phase, onBack]);
 
   useEffect(() => {
     if (phase === "running" && status === "idle") {
@@ -122,6 +137,11 @@ export function CommandExecution({
         label: pinned ? "📌 Unpin command" : "📌 Pin command",
         hint: "Save to quick access",
       },
+      {
+        value: "background",
+        label: "⏩ Run in background",
+        hint: "Start as background process",
+      },
       { value: "cancel", label: "← Cancel" },
     ];
 
@@ -156,6 +176,19 @@ export function CommandExecution({
                     : "✓ Command unpinned",
                 );
                 break;
+              case "background": {
+                const cwd = process.cwd();
+                if (rawCommand) {
+                  const id = generateProcessId(rawCommand, currentArgs);
+                  startProcess(id, rawCommand, currentArgs, cwd);
+                } else {
+                  const resolved = resolveToolCommand(tool, cwd);
+                  const id = generateProcessId(resolved.command, currentArgs);
+                  startProcess(id, resolved.command, currentArgs, cwd, resolved.env);
+                }
+                setPhase("background-started");
+                break;
+              }
               case "cancel":
                 onBack();
                 break;
@@ -190,7 +223,26 @@ export function CommandExecution({
     );
   }
 
+  if (phase === "background-started") {
+    return (
+      <Box flexDirection="column" paddingX={panelMode ? 1 : 0}>
+        <Box marginY={1} gap={1}>
+          <Text color="#3ECF8E" bold>✓</Text>
+          <Text color="#3ECF8E" bold>Started in background</Text>
+        </Box>
+        <Box>
+          <Text dimColor>Command: </Text>
+          <Text>{cmdDisplay}</Text>
+        </Box>
+      </Box>
+    );
+  }
+
   if (phase === "running") {
+    const hasPartialOutput = partialStdout.length > 0 || partialStderr.length > 0;
+    // Reserve lines for: divider(1) + header(1) + margins(2) + divider(1) + spinner(1) + esc hint(1) + padding
+    const streamOutputHeight = Math.max(3, height - 10);
+
     return (
       <Box flexDirection="column" paddingX={panelMode ? 1 : 0}>
         <Divider width={panelMode ? width - 4 : width} />
@@ -206,6 +258,14 @@ export function CommandExecution({
         <Box marginTop={1}>
           <Spinner label={`Executing ${cmdDisplay}...`} />
         </Box>
+        {hasPartialOutput && (
+          <CommandOutput
+            stdout={partialStdout}
+            stderr={partialStderr}
+            height={streamOutputHeight}
+            isActive={false}
+          />
+        )}
         <Box marginTop={1}>
           <Text dimColor>Press </Text>
           <Text color={inkColors.accent}>Esc</Text>

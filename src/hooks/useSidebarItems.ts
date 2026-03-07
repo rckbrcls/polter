@@ -22,6 +22,7 @@ export function useSidebarItems(): SidebarItem[] {
     items.push({ id: "pinned", label: "Pinned", icon: "\uD83D\uDCCC", type: "action", section: "workflows" });
     items.push({ id: "custom-command", label: "Custom Cmd", icon: "\u270F\uFE0F", type: "action", section: "workflows" });
     items.push({ id: "processes", label: "Processes", icon: "\uD83D\uDCBB", type: "action", section: "workflows" });
+    items.push({ id: "scripts", label: "Scripts", icon: "\uD83D\uDCDC", type: "action", section: "workflows" });
 
     // Section 2: Features
     items.push({ id: "__sep_features__", label: "---", icon: "", type: "separator", sectionTitle: "Features" });
