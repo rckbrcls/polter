@@ -6,21 +6,22 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-green.svg)](https://nodejs.org/)
 
-An optimized interactive CLI for managing Supabase CLI workflows with more speed, consistency, and discoverability.
+An infrastructure orchestrator CLI for managing dev processes, pipelines, CLI commands (Supabase, GitHub, Vercel, Git), and packages from one unified interface.
 
-Polter is a productivity layer on top of the official `supabase` CLI. Instead of memorizing command trees, you browse one unified board, add extra args interactively, attach global flags, and pin common workflows for one-click reuse.
+Polter replaces the need to juggle multiple CLIs. Browse a tabbed command board, chain steps into reusable pipelines, manage background processes, and apply declarative project configuration — all from a single TUI.
 
 ## Features
 
-- **Interactive Command Builder**: Guided flow for command + subcommand + extra args
-- **Suggested Subcommand Picker**: Select common args (for example `db pull`) from boxed sections before typing custom args
-- **Unified Command Board**: Pinned runs, pinned commands, grouped categories, and actions in boxed sections on one screen
-- **Global Flags Picker**: Add common global flags in one step
-- **Pinned Commands and Runs**: Toggle base command pins with `→` and pin exact runs after success
-- **Custom Command Mode**: Run raw Supabase arguments like `-v` or `status -o json`
+- **Multi-Tool Command Board**: Browse and run commands across Supabase, GitHub (`gh`), Vercel, Git, and your package manager from one tabbed interface
+- **Pipelines**: Chain multiple commands into reusable, sequential workflows with progress tracking
+- **Process Management**: Start, monitor, and control background dev servers and scripts
+- **Declarative Configuration**: Define desired project state in `polter.yaml` and apply it with `polter plan` / `polter apply`
+- **Interactive Arg Builder**: Guided flow for command + subcommand + extra args with suggested picks and flag selection
+- **Pinned Commands and Runs**: Toggle base command pins with `→` and pin exact runs after success for one-click reuse
+- **Package Manager Detection**: Auto-detects npm/pnpm/yarn/bun from lockfiles and translates commands between managers
+- **MCP Server**: Expose Polter as an MCP server for AI tool integration (Claude Code, Cursor, etc.)
 - **Built-in Self-Update**: Update Polter for the current repository or globally through npm
-- **Shell Execution**: Resolves `supabase` from the current repository first, then falls back to `PATH`
-- **TypeScript-based CLI**: Strongly typed internal implementation
+- **TypeScript-based CLI**: Strongly typed internal implementation with React + Ink TUI
 
 ---
 
@@ -85,18 +86,22 @@ You can also run the same update flow from inside Polter:
 ## Requirements
 
 - **Node.js**: `>= 18`
-- **Supabase CLI**: installed globally in `PATH` or locally in the current repository
+
+CLI tools are optional. Polter detects which ones are installed and shows their status on the Tool Status screen:
+
+- **Supabase CLI** — [Install guide](https://supabase.com/docs/guides/cli)
+- **GitHub CLI (`gh`)** — [Install guide](https://cli.github.com/)
+- **Vercel CLI** — [Install guide](https://vercel.com/docs/cli)
+- **Package manager** — auto-detected from your lock file (npm, pnpm, yarn, or bun)
 
 Check your environment:
 
 ```bash
 node -v
 supabase --version
+gh --version
+vercel --version
 ```
-
-Install Supabase CLI (official docs):
-
-- [Supabase CLI Guide](https://supabase.com/docs/guides/cli)
 
 ---
 
@@ -104,13 +109,13 @@ Install Supabase CLI (official docs):
 
 ### Execution Model
 
-Polter executes workflow commands as:
+Polter resolves the appropriate CLI tool and executes commands as:
 
 ```bash
-supabase <command> <extra-args> <global-flags>
+<tool> <command> <extra-args> <flags>
 ```
 
-The self-update action is the only built-in exception and can run one of:
+where `<tool>` is one of `supabase`, `gh`, `vercel`, `git`, or your package manager. The self-update action is the only built-in exception and can run one of:
 
 ```bash
 npm install -g @polterware/polter@latest
@@ -132,72 +137,27 @@ npm install -D @polterware/polter@latest
 
 ## Command Categories
 
-### Quick Start
+Commands are organized into 9 feature groups in the TUI. Each group pulls from one or more CLI tools.
 
-- `bootstrap` - Bootstrap a Supabase project from a starter template
+| Group | Tools | Representative commands |
+| --- | --- | --- |
+| **Database** | Supabase | `supabase db pull`, `supabase migration list`, `supabase seed`, `supabase inspect` |
+| **Functions** | Supabase | `supabase functions serve`, `supabase functions deploy`, `supabase functions delete` |
+| **Deploy** | Vercel, Git, Supabase | `vercel deploy --prod`, `vercel promote`, `vercel rollback`, `git push` |
+| **Repo** | Git, GitHub | `git status`, `git commit`, `gh pr create`, `gh issue list`, `gh release create` |
+| **CI/CD** | GitHub, Vercel | `gh workflow run`, `gh run view`, `vercel env pull`, `vercel env add` |
+| **Auth & Storage** | Supabase | `supabase storage`, `supabase secrets`, `supabase sso` |
+| **Networking** | Supabase, Vercel | `supabase domains`, `supabase ssl-enforcement`, `vercel domains add` |
+| **Packages** | npm/pnpm/yarn/bun | `pkg install`, `pkg add`, `pkg audit`, `pkg publish`, `pkg version patch` |
+| **Setup** | All | `supabase init`, `supabase link`, `vercel login`, `gh auth login` |
 
-### Local Development
-
-- `db` - Manage Postgres databases
-- `gen` - Run code generation tools
-- `init` - Initialize a local project
-- `inspect` - Inspect Supabase project resources
-- `link` - Link local project to remote Supabase project
-- `login` - Authenticate with Supabase access token
-- `logout` - Remove local auth token
-- `migration` - Manage migration scripts
-- `seed` - Seed project from `supabase/config.toml`
-- `services` - Show local service versions
-- `start` - Start local Supabase containers
-- `status` - Show local container status
-- `stop` - Stop local Supabase containers
-- `test` - Run tests against local stack
-- `unlink` - Unlink local project
-
-### Management APIs
-
-- `backups`
-- `branches`
-- `config`
-- `domains`
-- `encryption`
-- `functions`
-- `network-bans`
-- `network-restrictions`
-- `orgs`
-- `postgres-config`
-- `projects`
-- `secrets`
-- `snippets`
-- `ssl-enforcement`
-- `sso`
-- `storage`
-- `vanity-subdomains`
-
-### Additional Commands
-
-- `completion` - Generate shell completion script
-- `help` - Show Supabase command help
-
-### Custom Command / Check Version
-
-Use this mode for free-form args like:
-
-- `-v`
-- `status -o json`
-- `db pull`
-- `projects list`
+The board currently exposes **107 commands** across 5 CLI tools. Use the TUI tabs to browse a specific group or search across all of them.
 
 ---
 
-## Global Flags
+## Flags
 
-Available global flags in the interactive selector:
-
-- `--create-ticket` - Create support ticket on error
-- `--debug` - Enable debug logs
-- `--experimental` - Enable experimental features
-- `--yes` - Auto-confirm prompts
+Flags are tool-specific. When you select a command, the interactive flag picker shows the available flags for that tool (e.g. `--debug` for Supabase, `--force` for Vercel, `--web` for GitHub CLI). You can also type custom flags in the extra-args input.
 
 ---
 
@@ -220,80 +180,76 @@ Pins are persisted locally using OS-level app config storage.
 
 ## Usage Examples
 
-### Check Supabase CLI version
-
-Interactive path:
-
-1. `Custom Command / Check Version`
-2. Input: `-v`
-
-Executed command:
+### Run a pipeline
 
 ```bash
-supabase -v
+polter pipeline run deploy-staging
 ```
 
-### Start local stack with debug
+Executes each step of the `deploy-staging` pipeline in sequence, showing progress as it goes.
+
+### Deploy to Vercel
 
 Interactive path:
 
-1. `Local Development`
-2. Command: `start`
-3. Extra args: none
-4. Flags: `--debug`
+1. **Deploy** tab
+2. Command: `vercel deploy --prod`
+3. Confirm and execute
 
 Executed command:
 
 ```bash
-supabase start --debug
+vercel deploy --prod
 ```
 
-### List projects
+### Create a GitHub PR
 
 Interactive path:
 
-1. `Management APIs`
-2. Command: `projects`
-3. Extra args: `list`
+1. **Repo** tab
+2. Command: `gh pr create`
+3. Extra args: `--fill`
 
 Executed command:
 
 ```bash
-supabase projects list
+gh pr create --fill
 ```
 
-### Run DB pull and auto-confirm prompts
+### Install a dependency
 
 Interactive path:
 
-1. `Local Development`
-2. Command: `db`
-3. Extra args: `pull`
-4. Flags: `--yes`
+1. **Packages** tab
+2. Command: `pkg add`
+3. Extra args: `zod`
 
-Executed command:
+Executed command (resolved for your package manager):
 
 ```bash
-supabase db pull --yes
+npm install zod        # npm
+pnpm add zod           # pnpm
+yarn add zod           # yarn
+bun add zod            # bun
 ```
 
 ---
 
 ## Troubleshooting
 
-### `supabase: command not found`
+### CLI tool not found
 
-Supabase CLI is not installed in the current repository and is not available in your `PATH`.
+If a tool (Supabase, `gh`, Vercel) is not installed, its commands will still appear in the board but will fail at execution. Open the **Tool Status** screen to see which tools are detected and linked.
 
 Fix:
 
-1. Install Supabase CLI globally or in the current repository
-2. Restart terminal
-3. Run `supabase --version`
+1. Install the missing CLI (see [Requirements](#requirements))
+2. Restart your terminal
+3. Re-open Polter — the Tool Status screen should show a green check
 
 ### Command exits with non-zero code
 
-Polter forwards execution to Supabase CLI. Use `--debug` and re-run to inspect detailed logs.
+Polter forwards execution to the underlying CLI tool. Check the tool's own documentation for the specific error. For Supabase commands, try adding `--debug`; for GitHub CLI, try `--verbose`.
 
 ### Pinned commands are missing
 
@@ -307,8 +263,8 @@ Ensure you are running in a terminal that supports interactive TTY prompts.
 
 ## Security Notes
 
-- Polter executes local shell commands through your installed Supabase CLI.
-- Keep Supabase tokens out of shared shells and CI logs.
+- Polter executes local shell commands through your installed CLI tools (Supabase, GitHub, Vercel, Git, package manager).
+- Keep tokens and credentials out of shared shells and CI logs.
 - Prefer short-lived tokens and least-privileged project access.
 
 ---
