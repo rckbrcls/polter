@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Box, Text, useInput } from "ink";
+import ms from "ms";
 import { TabBar } from "../components/TabBar.js";
 import { SelectList, type SelectItem } from "../components/SelectList.js";
 import { StatusBar } from "../components/StatusBar.js";
@@ -41,7 +42,7 @@ export function Home({
 
   useEffect(() => {
     if (!pinFeedback) return;
-    const timeout = setTimeout(() => setPinFeedback(undefined), 1400);
+    const timeout = setTimeout(() => setPinFeedback(undefined), ms("1.4s"));
     return () => clearTimeout(timeout);
   }, [pinFeedback]);
 

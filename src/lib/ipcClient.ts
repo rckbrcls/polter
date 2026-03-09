@@ -1,4 +1,5 @@
 import net from "node:net";
+import ms from "ms";
 import {
   serializeMessage,
   parseMessages,
@@ -6,7 +7,7 @@ import {
   type RpcResponse,
 } from "./ipcProtocol.js";
 
-const DEFAULT_TIMEOUT = 5000;
+const DEFAULT_TIMEOUT = ms("5s");
 
 export interface IpcClient {
   connect(): Promise<void>;
@@ -46,10 +47,12 @@ export function createIpcClient(socketPath: string): IpcClient {
   return {
     connect() {
       return new Promise<void>((resolve, reject) => {
+        let settled = false;
         socket = net.createConnection(socketPath);
 
         socket.on("connect", () => {
           connected = true;
+          settled = true;
           resolve();
         });
 
@@ -57,7 +60,6 @@ export function createIpcClient(socketPath: string): IpcClient {
 
         socket.on("close", () => {
           connected = false;
-          // Reject all pending calls
           for (const entry of pending.values()) {
             entry.reject(new Error("Connection closed"));
           }
@@ -66,7 +68,8 @@ export function createIpcClient(socketPath: string): IpcClient {
 
         socket.on("error", (err) => {
           connected = false;
-          if (!connected) {
+          if (!settled) {
+            settled = true;
             reject(err);
           }
         });

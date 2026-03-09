@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "./fs.js";
 import { join } from "node:path";
 import { resolveSupabaseCommand, type CommandExecution } from "./runner.js";
 import { commandExists, execCapture } from "./system.js";
@@ -161,10 +161,11 @@ function detectGhLink(cwd: string): { linked: boolean; project?: string } {
   return { linked: false };
 }
 
-const toolLinkCache = new Map<CliToolId, ToolLinkInfo>();
+const toolLinkCache = new Map<string, ToolLinkInfo>();
 
 export function getToolLinkInfo(toolId: CliToolId, cwd: string = process.cwd()): ToolLinkInfo {
-  const cached = toolLinkCache.get(toolId);
+  const cacheKey = `${toolId}:${cwd}`;
+  const cached = toolLinkCache.get(cacheKey);
   if (cached) return cached;
 
   const base = getToolInfo(toolId);
@@ -188,6 +189,6 @@ export function getToolLinkInfo(toolId: CliToolId, cwd: string = process.cwd()):
   }
 
   const info: ToolLinkInfo = { ...base, ...linkStatus };
-  toolLinkCache.set(toolId, info);
+  toolLinkCache.set(cacheKey, info);
   return info;
 }

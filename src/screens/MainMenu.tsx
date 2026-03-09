@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Box, Text } from "ink";
+import ms from "ms";
 import { GhostBanner } from "../components/GhostBanner.js";
 import { SelectList, type SelectItem } from "../components/SelectList.js";
 import { StatusBar } from "../components/StatusBar.js";
@@ -11,7 +12,7 @@ import {
   togglePinnedRun,
 } from "../data/pins.js";
 import { buildMainMenuItems } from "./mainMenuModel.js";
-import { findCommandByValue } from "../data/commands.js";
+import { findCommandByValue } from "../data/commands/index.js";
 import type { NavigationParams, Screen } from "../hooks/useNavigation.js";
 
 interface MainMenuProps {
@@ -23,17 +24,18 @@ export function MainMenu({
   onNavigate,
   onExit,
 }: MainMenuProps): React.ReactElement {
-  const [pinnedCommands, setPinnedCommands] = useState<string[]>(
-    () => getPinnedCommands(),
-  );
-  const [pinnedRuns, setPinnedRuns] = useState<string[]>(
-    () => getPinnedRuns(),
-  );
+  const [pinnedCommands, setPinnedCommands] = useState<string[]>([]);
+  const [pinnedRuns, setPinnedRuns] = useState<string[]>([]);
+
+  useEffect(() => {
+    setPinnedCommands(getPinnedCommands());
+    setPinnedRuns(getPinnedRuns());
+  }, []);
   const [pinFeedback, setPinFeedback] = useState<string>();
 
   useEffect(() => {
     if (!pinFeedback) return;
-    const timeout = setTimeout(() => setPinFeedback(undefined), 1400);
+    const timeout = setTimeout(() => setPinFeedback(undefined), ms("1.4s"));
     return () => clearTimeout(timeout);
   }, [pinFeedback]);
 

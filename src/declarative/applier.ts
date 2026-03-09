@@ -1,3 +1,4 @@
+import pLimit from "p-limit";
 import type { PlanAction } from "./schema.js";
 import { runCommand } from "../lib/runner.js";
 import { resolveToolCommand } from "../lib/toolResolver.js";
@@ -14,22 +15,27 @@ export async function applyActions(
   cwd: string = process.cwd(),
   onProgress?: (completed: number, total: number, current: PlanAction) => void,
 ): Promise<ApplyResult[]> {
-  const results: ApplyResult[] = [];
+  const limit = pLimit(3);
+  let completed = 0;
 
-  for (let i = 0; i < actions.length; i++) {
-    const action = actions[i]!;
-    onProgress?.(i, actions.length, action);
+  const results = await Promise.all(
+    actions.map((action) =>
+      limit(async (): Promise<ApplyResult> => {
+        onProgress?.(completed, actions.length, action);
 
-    const resolved = resolveToolCommand(action.tool, cwd);
-    const result = await runCommand(
-      { command: resolved.command, env: resolved.env },
-      action.args,
-      cwd,
-    ).promise;
+        const resolved = resolveToolCommand(action.tool, cwd);
+        const result = await runCommand(
+          { command: resolved.command, env: resolved.env },
+          action.args,
+          cwd,
+        ).promise;
 
-    const success = !result.spawnError && result.exitCode === 0;
-    results.push({ action, success, result });
-  }
+        completed++;
+        const success = !result.spawnError && result.exitCode === 0;
+        return { action, success, result };
+      }),
+    ),
+  );
 
   return results;
 }

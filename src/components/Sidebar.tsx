@@ -50,6 +50,14 @@ export function Sidebar({
 
   const sections = useMemo(() => groupSections(items), [items]);
 
+  // Defer useInput activation so isActive transitions false→true,
+  // working around Ink's useInput not subscribing on first render tick.
+  const [inputReady, setInputReady] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setInputReady(true), 0);
+    return () => clearTimeout(t);
+  }, []);
+
   // Sync cursor when selectedId changes externally
   useEffect(() => {
     const idx = selectableItems.findIndex((item) => item.id === selectedId);
@@ -81,22 +89,28 @@ export function Sidebar({
         }
       }
     },
-    { isActive: isFocused },
+    { isActive: isFocused && inputReady },
   );
 
-  // Build a flat index counter to map section items to selectableItems indices
-  let flatIdx = 0;
+  // Pre-compute flat indices for each section to avoid mutable counter in render
+  const sectionIndices = useMemo(() => {
+    let idx = 0;
+    return sections.map((section) => {
+      const start = idx;
+      idx += section.items.length;
+      return { start, end: idx - 1 };
+    });
+  }, [sections]);
 
   return (
     <Box flexDirection="column" gap={0}>
-      {sections.map((section) => {
-        const sectionStartIdx = flatIdx;
-        const sectionEndIdx = sectionStartIdx + section.items.length - 1;
+      {sections.map((section, sectionIdx) => {
+        const { start: sectionStartIdx, end: sectionEndIdx } = sectionIndices[sectionIdx]!;
         const hasCursorInSection = isFocused && cursorIdx >= sectionStartIdx && cursorIdx <= sectionEndIdx;
         const hasActiveInSection = section.items.some((item) => item.id === selectedId);
         const borderColor = hasCursorInSection || hasActiveInSection ? inkColors.accent : "#555555";
 
-        const rendered = (
+        return (
           <Box
             key={section.title}
             flexDirection="column"
@@ -105,9 +119,8 @@ export function Sidebar({
             paddingX={1}
           >
             <Text dimColor bold>{section.title}</Text>
-            {section.items.map((item) => {
-              const thisIdx = flatIdx;
-              flatIdx++;
+            {section.items.map((item, itemIdx) => {
+              const thisIdx = sectionStartIdx + itemIdx;
               const isCursor = isFocused && thisIdx === cursorIdx;
               const isActive = item.id === selectedId;
 
@@ -126,8 +139,6 @@ export function Sidebar({
             })}
           </Box>
         );
-
-        return rendered;
       })}
     </Box>
   );

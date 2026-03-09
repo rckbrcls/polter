@@ -1,54 +1,46 @@
-export interface PolterYaml {
-  version: 1;
+import { z } from "zod";
 
-  project?: {
-    name: string;
-  };
+export const PolterYamlSchema = z.object({
+  version: z.literal(1),
+  project: z.object({
+    name: z.string(),
+  }).optional(),
+  supabase: z.object({
+    project_ref: z.string().optional(),
+    region: z.string().optional(),
+    database: z.object({
+      migrations_dir: z.string().optional(),
+    }).optional(),
+    functions: z.array(z.object({
+      name: z.string(),
+      verify_jwt: z.boolean().optional(),
+    })).optional(),
+    secrets: z.array(z.string()).optional(),
+  }).optional(),
+  vercel: z.object({
+    project_id: z.string().optional(),
+    framework: z.string().optional(),
+    domains: z.array(z.string()).optional(),
+    env: z.record(z.string(), z.record(z.string(), z.string())).optional(),
+  }).optional(),
+  github: z.object({
+    repo: z.string().optional(),
+    branch_protection: z.record(z.string(), z.object({
+      required_reviews: z.number().optional(),
+      require_status_checks: z.boolean().optional(),
+    })).optional(),
+    secrets: z.array(z.string()).optional(),
+  }).optional(),
+  pkg: z.object({
+    manager: z.enum(["npm", "pnpm", "yarn", "bun"]).optional(),
+  }).optional(),
+  pipelines: z.record(z.string(), z.object({
+    description: z.string().optional(),
+    steps: z.array(z.string()),
+  })).optional(),
+});
 
-  supabase?: {
-    project_ref?: string;
-    region?: string;
-    database?: {
-      migrations_dir?: string;
-    };
-    functions?: Array<{
-      name: string;
-      verify_jwt?: boolean;
-    }>;
-    secrets?: string[];
-  };
-
-  vercel?: {
-    project_id?: string;
-    framework?: string;
-    domains?: string[];
-    env?: Record<string, Record<string, string>>;
-  };
-
-  github?: {
-    repo?: string;
-    branch_protection?: Record<
-      string,
-      {
-        required_reviews?: number;
-        require_status_checks?: boolean;
-      }
-    >;
-    secrets?: string[];
-  };
-
-  pkg?: {
-    manager?: "npm" | "pnpm" | "yarn" | "bun";
-  };
-
-  pipelines?: Record<
-    string,
-    {
-      description?: string;
-      steps: string[];
-    }
-  >;
-}
+export type PolterYaml = z.infer<typeof PolterYamlSchema>;
 
 export interface PlanAction {
   tool: "supabase" | "vercel" | "gh" | "pkg";

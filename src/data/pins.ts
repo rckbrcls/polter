@@ -1,15 +1,11 @@
-import Conf from "conf";
-
-const config = new Conf({
-  projectName:
-    process.env.NODE_ENV === "test" ? "polter-test" : "polter",
-});
+import { getConf } from "../config/globalConf.js";
 
 const COMMAND_PINS_KEY = "pinnedCommandBasesV2";
 const RUN_PINS_KEY = "pinnedCommandRunsV1";
 const LEGACY_PINS_KEY = "pinnedCommands";
 
 function ensurePinsInitialized(): void {
+  const config = getConf();
   if (!config.has(COMMAND_PINS_KEY)) {
     config.set(COMMAND_PINS_KEY, []);
   }
@@ -26,11 +22,11 @@ function ensurePinsInitialized(): void {
 
 export function getPinnedCommands(): string[] {
   ensurePinsInitialized();
-  return (config.get(COMMAND_PINS_KEY) as string[]) || [];
+  return (getConf().get(COMMAND_PINS_KEY) as string[]) || [];
 }
 
 function setPinnedCommands(commands: string[]): void {
-  config.set(COMMAND_PINS_KEY, commands);
+  getConf().set(COMMAND_PINS_KEY, commands);
 }
 
 export function togglePinnedCommand(cmd: string): void {
@@ -51,11 +47,11 @@ export function isPinnedCommand(cmd: string): boolean {
 
 export function getPinnedRuns(): string[] {
   ensurePinsInitialized();
-  return (config.get(RUN_PINS_KEY) as string[]) || [];
+  return (getConf().get(RUN_PINS_KEY) as string[]) || [];
 }
 
 function setPinnedRuns(runs: string[]): void {
-  config.set(RUN_PINS_KEY, runs);
+  getConf().set(RUN_PINS_KEY, runs);
 }
 
 export function togglePinnedRun(runCommand: string): void {
@@ -76,10 +72,11 @@ export function isPinnedRun(runCommand: string): boolean {
 export function __clearPinsForTests(): void {
   setPinnedCommands([]);
   setPinnedRuns([]);
-  config.delete(LEGACY_PINS_KEY);
+  getConf().delete(LEGACY_PINS_KEY);
 }
 
 export function __setLegacyPinsForTests(commands: string[]): void {
+  const config = getConf();
   config.delete(COMMAND_PINS_KEY);
   config.delete(RUN_PINS_KEY);
   config.set(LEGACY_PINS_KEY, commands);

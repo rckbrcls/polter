@@ -1,25 +1,6 @@
 #!/usr/bin/env node
-import React from "react";
-import { render } from "ink";
-import { AppClassic } from "./app.js";
-import { AppPanel } from "./appPanel.js";
 import { parseCliArgs, printCliHelp } from "./lib/cliArgs.js";
-import { runAppCli } from "./apps/runAppCli.js";
-import { installMcpServer, removeMcpServer, mcpStatus } from "./lib/mcpInstaller.js";
-import { setupSkillCli } from "./lib/skillSetup.js";
-import { findPipelineByName } from "./pipeline/storage.js";
-import { executePipeline } from "./pipeline/engine.js";
-import { getCommandById } from "./data/commands/index.js";
-import { parsePolterYaml } from "./declarative/parser.js";
-import { planChanges } from "./declarative/planner.js";
-import { applyActions } from "./declarative/applier.js";
-import { getCurrentStatus } from "./declarative/status.js";
-import { getToolInfo } from "./lib/toolResolver.js";
-import { openInEditor } from "./lib/editor.js";
-import { getProjectConfigPath, getOrCreateProjectConfig, writeProjectConfig } from "./config/projectConfig.js";
 import pc from "picocolors";
-import { getSocketPath } from "./lib/processManager.js";
-import { createIpcServer } from "./lib/ipcServer.js";
 
 async function main() {
   const parsed = parseCliArgs(process.argv.slice(2));
@@ -30,6 +11,7 @@ async function main() {
   }
 
   if (parsed.mode === "mcp") {
+    const { installMcpServer, removeMcpServer, mcpStatus } = await import("./lib/mcpInstaller.js");
     const scope = parsed.mcpScope ?? "local";
     switch (parsed.mcpAction) {
       case "install":
@@ -47,16 +29,16 @@ async function main() {
   }
 
   if (parsed.mode === "setup") {
+    const { setupSkillCli } = await import("./lib/skillSetup.js");
     setupSkillCli();
     return;
   }
 
-  if (parsed.mode === "app") {
-    const exitCode = await runAppCli(parsed.options);
-    process.exit(exitCode);
-  }
-
   if (parsed.mode === "pipeline-run") {
+    const { findPipelineByName } = await import("./pipeline/storage.js");
+    const { executePipeline } = await import("./pipeline/engine.js");
+    const { getCommandById } = await import("./data/commands/index.js");
+
     const pipeline = findPipelineByName(parsed.pipelineName!);
     if (!pipeline) {
       process.stderr.write(`Pipeline not found: ${parsed.pipelineName}\n`);
@@ -86,6 +68,9 @@ async function main() {
   }
 
   if (parsed.mode === "status") {
+    const { getToolInfo } = await import("./lib/toolResolver.js");
+    const { getCurrentStatus } = await import("./declarative/status.js");
+
     const tools = ["supabase", "gh", "vercel", "git"] as const;
     process.stdout.write(pc.bold("Tool Status\n\n"));
     for (const toolId of tools) {
@@ -111,6 +96,9 @@ async function main() {
   }
 
   if (parsed.mode === "plan") {
+    const { parsePolterYaml } = await import("./declarative/parser.js");
+    const { planChanges } = await import("./declarative/planner.js");
+
     const yaml = parsePolterYaml();
     if (!yaml) {
       process.stderr.write("No polter.yaml found in current directory.\n");
@@ -133,6 +121,10 @@ async function main() {
   }
 
   if (parsed.mode === "apply") {
+    const { parsePolterYaml } = await import("./declarative/parser.js");
+    const { planChanges } = await import("./declarative/planner.js");
+    const { applyActions } = await import("./declarative/applier.js");
+
     const yaml = parsePolterYaml();
     if (!yaml) {
       process.stderr.write("No polter.yaml found in current directory.\n");
@@ -166,6 +158,9 @@ async function main() {
 
   if (parsed.mode === "config") {
     if (parsed.configEdit) {
+      const { getProjectConfigPath, getOrCreateProjectConfig, writeProjectConfig } = await import("./config/projectConfig.js");
+      const { openInEditor } = await import("./lib/editor.js");
+
       const configPath = getProjectConfigPath();
       if (!configPath) {
         process.stderr.write("No package.json found. Run from a project directory.\n");
@@ -177,17 +172,22 @@ async function main() {
       const result = openInEditor(configPath.file);
       process.exit(result.exitCode ?? 0);
     }
-    const AppComponent = parsed.classic ? AppClassic : AppPanel;
-    const socketPath = getSocketPath();
-    const ipc = socketPath ? createIpcServer(socketPath) : null;
-    if (ipc) await ipc.start();
-    const inst = render(React.createElement(AppComponent));
-    await inst.waitUntilExit();
-    if (ipc) await ipc.stop();
-    process.exit(0);
   }
 
-  const AppComponent = parsed.classic ? AppClassic : AppPanel;
+  // TUI mode — only load React/Ink when actually needed
+  const React = (await import("react")).default;
+  const { render } = await import("ink");
+  const { getSocketPath } = await import("./lib/processManager.js");
+  const { createIpcServer } = await import("./lib/ipcServer.js");
+
+  // Warm up Conf singleton before React render so useEffect reads are fast (in-memory)
+  const { getConf } = await import("./config/globalConf.js");
+  getConf();
+
+  const AppComponent = parsed.classic
+    ? (await import("./app.js")).AppClassic
+    : (await import("./appPanel.js")).AppPanel;
+
   const socketPath = getSocketPath();
   const ipc = socketPath ? createIpcServer(socketPath) : null;
   if (ipc) await ipc.start();

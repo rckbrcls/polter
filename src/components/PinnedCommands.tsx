@@ -1,13 +1,8 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { Box, Text } from "ink";
 import { SelectList, type SelectItem } from "./SelectList.js";
 import { inkColors } from "../theme.js";
-import {
-  getPinnedCommands,
-  getPinnedRuns,
-  togglePinnedCommand,
-  togglePinnedRun,
-} from "../data/pins.js";
+import { usePinAction } from "../hooks/usePinAction.js";
 import { buildPinnedOnlyItems } from "../screens/homeModel.js";
 import { findCommandByValue } from "../data/commands/index.js";
 import type { NavigationParams, Screen } from "../hooks/useNavigation.js";
@@ -29,28 +24,17 @@ export function PinnedCommands({
   height = 24,
   isInputActive = true,
 }: PinnedCommandsProps): React.ReactElement {
-  const [pinnedCommands, setPinnedCommands] = useState<string[]>(() => getPinnedCommands());
-  const [pinnedRuns, setPinnedRuns] = useState<string[]>(() => getPinnedRuns());
-  const [pinFeedback, setPinFeedback] = useState<string>();
-
-  useEffect(() => {
-    if (!pinFeedback) return;
-    const timeout = setTimeout(() => setPinFeedback(undefined), 1400);
-    return () => clearTimeout(timeout);
-  }, [pinFeedback]);
+  const {
+    pinnedCommands,
+    pinnedRuns,
+    pinFeedback,
+    handleRightAction,
+  } = usePinAction(onPinsChanged);
 
   const items = useMemo(
     () => buildPinnedOnlyItems(pinnedCommands, pinnedRuns),
     [pinnedCommands, pinnedRuns],
   );
-
-  const pinnedCommandSet = useMemo(() => new Set(pinnedCommands), [pinnedCommands]);
-  const pinnedRunSet = useMemo(() => new Set(pinnedRuns), [pinnedRuns]);
-
-  const refreshPins = () => {
-    setPinnedCommands(getPinnedCommands());
-    setPinnedRuns(getPinnedRuns());
-  };
 
   const handleSelect = (value: string, item?: SelectItem) => {
     if (!item) return;
@@ -77,31 +61,6 @@ export function PinnedCommands({
         const tool = cmdDef?.tool ?? "supabase";
         onNavigate("confirm-execute", { args, tool, interactive: cmdDef?.interactive });
       }
-    }
-  };
-
-  const handleRightAction = (item: SelectItem) => {
-    if (item.kind === "command") {
-      const wasPinned = pinnedCommandSet.has(item.value);
-      togglePinnedCommand(item.value);
-      refreshPins();
-      onPinsChanged?.();
-      setPinFeedback(
-        wasPinned ? `Unpinned "${item.value}"` : `Pinned "${item.value}"`,
-      );
-      return;
-    }
-
-    if (item.kind === "run") {
-      const wasPinned = pinnedRunSet.has(item.value);
-      togglePinnedRun(item.value);
-      refreshPins();
-      onPinsChanged?.();
-      setPinFeedback(
-        wasPinned
-          ? `Unpinned run "${item.value}"`
-          : `Pinned run "${item.value}"`,
-      );
     }
   };
 

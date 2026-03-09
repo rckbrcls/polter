@@ -32,11 +32,12 @@ export function savePipeline(
   pipeline: Pipeline,
   source: PipelineSource,
   startDir?: string,
-): void {
+): boolean {
   if (source === "project") {
-    saveProjectPipeline(pipeline, startDir);
+    return saveProjectPipeline(pipeline, startDir);
   } else {
     saveGlobalPipeline(pipeline);
+    return true;
   }
 }
 

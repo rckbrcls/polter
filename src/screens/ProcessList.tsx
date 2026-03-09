@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Box, Text, useInput } from "ink";
+import ms from "ms";
 import { inkColors, panel } from "../theme.js";
-import { listProcesses, stopProcess, removeProcess, type ProcessInfo } from "../lib/processManager.js";
+import { listProcesses, stopProcess, removeProcess, startProcess, generateProcessId, type ProcessInfo } from "../lib/processManager.js";
 import { homedir } from "node:os";
 import type { Screen } from "../data/types.js";
 import type { NavigationParams } from "../hooks/useNavigation.js";
@@ -53,20 +54,21 @@ export function ProcessList({
   panelMode = false,
   isInputActive = true,
 }: ProcessListProps): React.ReactElement {
-  const [processes, setProcesses] = useState<ProcessInfo[]>(() => listProcesses());
+  const [processes, setProcesses] = useState<ProcessInfo[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [feedback, setFeedback] = useState<string>();
 
   useEffect(() => {
+    setProcesses(listProcesses());
     const interval = setInterval(() => {
       setProcesses(listProcesses());
-    }, 2000);
+    }, ms("1s"));
     return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
     if (feedback) {
-      const timer = setTimeout(() => setFeedback(undefined), 2000);
+      const timer = setTimeout(() => setFeedback(undefined), ms("2s"));
       return () => clearTimeout(timer);
     }
   }, [feedback]);
@@ -136,6 +138,18 @@ export function ProcessList({
     if (input === "d") {
       const proc = processes[selectedIndex];
       if (proc && proc.status !== "running") handleRemove(proc.id);
+      return;
+    }
+
+    // Re-run process
+    if (input === "r") {
+      const proc = processes[selectedIndex];
+      if (proc) {
+        const newId = generateProcessId(proc.command, proc.args);
+        startProcess(newId, proc.command, proc.args, proc.cwd);
+        setProcesses(listProcesses());
+        setFeedback(`Re-started: ${newId}`);
+      }
       return;
     }
   });
@@ -230,6 +244,7 @@ export function ProcessList({
 
       <Box marginTop={1} gap={2}>
         <Text dimColor>{"\u2192"}:logs</Text>
+        <Text dimColor>r:rerun</Text>
         <Text dimColor>x:stop</Text>
         <Text dimColor>d:remove</Text>
         <Text dimColor>Esc:back</Text>

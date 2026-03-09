@@ -14,6 +14,7 @@ export interface NavigationParams {
   processId?: string;
   interactive?: boolean;
   rawCommand?: string;
+  cwd?: string;
 }
 
 export interface NavigationState {

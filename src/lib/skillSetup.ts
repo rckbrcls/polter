@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from "./fs.js";
 import { join } from "node:path";
 import { homedir } from "node:os";
 import pc from "picocolors";

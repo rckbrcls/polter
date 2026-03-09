@@ -6,8 +6,16 @@ import { gitCommands } from "./commands/git.js";
 import { pkgCommands } from "./commands/pkg.js";
 
 const allSources = [...supabaseCommands, ...ghCommands, ...vercelCommands, ...gitCommands, ...pkgCommands];
+const allSourceIds = new Set(allSources.map((cmd) => cmd.id));
 
 function pick(ids: string[]) {
+  if (process.env.NODE_ENV !== "production") {
+    for (const id of ids) {
+      if (!allSourceIds.has(id)) {
+        throw new Error(`features.ts: unknown command ID "${id}". Check your feature definitions.`);
+      }
+    }
+  }
   const idSet = new Set(ids);
   return allSources.filter((cmd) => idSet.has(cmd.id));
 }

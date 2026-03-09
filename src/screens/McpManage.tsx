@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Box, Text } from "ink";
 import { SelectList } from "../components/SelectList.js";
 import { StatusBar } from "../components/StatusBar.js";
@@ -30,7 +30,11 @@ export function McpManage({
   panelMode = false,
   isInputActive = true,
 }: McpManageProps): React.ReactElement {
-  const [status, setStatus] = useState<McpStatusInfo>(() => getMcpStatusInfo());
+  const [status, setStatus] = useState<McpStatusInfo | null>(null);
+
+  useEffect(() => {
+    setStatus(getMcpStatusInfo());
+  }, []);
   const [phase, setPhase] = useState<Phase>("overview");
   const [action, setAction] = useState<Action | null>(null);
   const [result, setResult] = useState<McpActionResult | null>(null);
@@ -52,6 +56,14 @@ export function McpManage({
     }
     setPhase("result");
   }, []);
+
+  if (!status) {
+    return (
+      <Box flexDirection="column" paddingX={panelMode ? 1 : 0}>
+        <Text color={inkColors.accent}>Loading...</Text>
+      </Box>
+    );
+  }
 
   if (phase === "executing") {
     return (

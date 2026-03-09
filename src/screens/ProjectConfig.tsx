@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Box, Text } from "ink";
 import { SelectList } from "../components/SelectList.js";
 import { TextPrompt } from "../components/TextPrompt.js";
@@ -38,13 +38,26 @@ export function ProjectConfig({
   isInputActive = true,
 }: ProjectConfigProps): React.ReactElement {
   const configPath = useMemo(() => getProjectConfigPath(), []);
-  const [config, setConfig] = useState(() => getOrCreateProjectConfig());
+  const [config, setConfig] = useState<ReturnType<typeof getOrCreateProjectConfig> | null>(null);
   const [phase, setPhase] = useState<Phase>("overview");
   const [feedback, setFeedback] = useState<string>();
   const [envKey, setEnvKey] = useState("");
   const [selectedEnvKey, setSelectedEnvKey] = useState("");
   const { openEditor, isEditing } = useEditor();
-  const detectedPkg = useMemo(() => detectPkgManager(), []);
+  const [detectedPkg, setDetectedPkg] = useState<ReturnType<typeof detectPkgManager> | null>(null);
+
+  useEffect(() => {
+    setConfig(getOrCreateProjectConfig());
+    setDetectedPkg(detectPkgManager());
+  }, []);
+
+  if (!config || !detectedPkg) {
+    return (
+      <Box flexDirection="column" paddingX={panelMode ? 1 : 0}>
+        <Text color={inkColors.accent}>Loading config...</Text>
+      </Box>
+    );
+  }
 
   if (!configPath) {
     return (

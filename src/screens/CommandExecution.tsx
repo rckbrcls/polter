@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Box, Text, useInput } from "ink";
+import ms from "ms";
 import { SelectList, type SelectItem } from "../components/SelectList.js";
 import { ConfirmPrompt } from "../components/ConfirmPrompt.js";
 import { ToolBadge } from "../components/ToolBadge.js";
@@ -9,19 +10,45 @@ import { ScrollableBox } from "../components/ScrollableBox.js";
 import { useCommand } from "../hooks/useCommand.js";
 import { useInteractiveRun } from "../hooks/useInteractiveRun.js";
 import { isPinnedRun, togglePinnedRun } from "../data/pins.js";
+
 import { copyToClipboard } from "../lib/clipboard.js";
 import { parseErrorSuggestions } from "../lib/errorSuggestions.js";
 import { stripAnsi } from "../lib/ansi.js";
 import { inkColors, panel } from "../theme.js";
 import { getToolDisplayName, resolveToolCommand } from "../lib/toolResolver.js";
 import { startProcess, generateProcessId } from "../lib/processManager.js";
+import { homedir } from "node:os";
 import type { CliToolId } from "../data/types.js";
+
+function formatUptime(start: Date): string {
+  const ms = Date.now() - start.getTime();
+  const seconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  if (hours > 0) return `${hours}h ${minutes % 60}m`;
+  if (minutes > 0) return `${minutes}m ${seconds % 60}s`;
+  return `${seconds}s`;
+}
+
+function formatDuration(start: Date): string {
+  const ms = Date.now() - start.getTime();
+  const seconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(seconds / 60);
+  if (minutes > 0) return `${minutes}m ${seconds % 60}s`;
+  return `${seconds}s`;
+}
+
+function shortenPath(p: string): string {
+  const home = homedir();
+  return p.startsWith(home) ? "~" + p.slice(home.length) : p;
+}
 
 interface CommandExecutionProps {
   args: string[];
   tool?: CliToolId;
   rawCommand?: string;
   interactive?: boolean;
+  cwd?: string;
   onBack: () => void;
   onHome?: () => void;
   onExit: () => void;
@@ -45,6 +72,7 @@ export function CommandExecution({
   tool = "supabase",
   rawCommand,
   interactive = false,
+  cwd: cwdProp,
   onBack,
   onHome,
   onExit,
@@ -54,11 +82,12 @@ export function CommandExecution({
   panelMode = false,
   isInputActive = true,
 }: CommandExecutionProps): React.ReactElement {
+  const cwd = cwdProp ?? process.cwd();
   const [phase, setPhase] = useState<Phase>("confirm");
   const [currentArgs, setCurrentArgs] = useState(initialArgs);
   const [pinMessage, setPinMessage] = useState<string>();
   const execution = rawCommand ?? tool;
-  const { status, result, run, reset, abort, partialStdout, partialStderr } = useCommand(execution, process.cwd(), {
+  const { status, result, run, reset, abort, partialStdout, partialStderr, pid, processId, startedAt } = useCommand(execution, cwd, {
     quiet: panelMode,
   });
   const { runInteractive } = useInteractiveRun();
@@ -106,7 +135,7 @@ export function CommandExecution({
 
   useEffect(() => {
     if (phase === "background-started") {
-      const t = setTimeout(() => onBack(), 1500);
+      const t = setTimeout(() => onBack(), ms("1.5s"));
       return () => clearTimeout(t);
     }
   }, [phase, onBack]);
@@ -121,7 +150,7 @@ export function CommandExecution({
           setPhase("error-menu");
         }
       } else {
-        run(currentArgs);
+        void run(currentArgs);
       }
     }
   }, [phase, status, run, currentArgs, panelMode, interactive, tool, runInteractive]);
@@ -137,11 +166,11 @@ export function CommandExecution({
     if (phase === "running" && status === "error") {
       setPhase("error-menu");
     }
-  }, [phase, runCommand, status]);
+  }, [phase, runCommand, status, execution, tool, currentArgs]);
 
   useEffect(() => {
     if (feedback) {
-      const timer = setTimeout(() => setFeedback(undefined), 2000);
+      const timer = setTimeout(() => setFeedback(undefined), ms("2s"));
       return () => clearTimeout(timer);
     }
   }, [feedback]);
@@ -195,7 +224,6 @@ export function CommandExecution({
                 );
                 break;
               case "background": {
-                const cwd = process.cwd();
                 if (rawCommand) {
                   const id = generateProcessId(rawCommand, currentArgs);
                   startProcess(id, rawCommand, currentArgs, cwd);
@@ -261,8 +289,8 @@ export function CommandExecution({
     const outputLines = outputText
       ? stripAnsi(outputText).split("\n")
       : [];
-    // Header (1) + gap (1) + border (2) + feedback (1) + footer gap (1) + footer (1) = 7
-    const logBoxHeight = Math.max(3, height - 7);
+    // Header (1) + gap (1) + process info (1) + gap (1) + border (2) + feedback (1) + footer gap (1) + footer (1) = 9
+    const logBoxHeight = Math.max(3, height - 9);
     const cardWidth = Math.max(30, (panelMode ? width - 4 : width) - 2);
 
     return (
@@ -272,6 +300,14 @@ export function CommandExecution({
           <Text color={inkColors.accent} bold>{"▶"} {cmdDisplay}</Text>
           <ToolBadge tool={tool} />
           <Text color={aborting ? "yellow" : "green"}>● {aborting ? "aborting" : "running"}</Text>
+        </Box>
+
+        {/* Process info */}
+        <Box marginBottom={1} gap={2}>
+          {pid && <Text dimColor>PID {pid}</Text>}
+          {processId && <Text dimColor>ID {processId}</Text>}
+          <Text dimColor>CWD {shortenPath(cwd)}</Text>
+          {startedAt && <Text dimColor>UP {formatUptime(startedAt)}</Text>}
         </Box>
 
         {/* Output box */}
@@ -352,8 +388,8 @@ export function CommandExecution({
 
     const successOutput = [result?.stdout, result?.stderr].filter(Boolean).join("\n");
     const successLines = successOutput ? stripAnsi(successOutput).split("\n") : [];
-    // Header (1) + gap (1) + border (2) + pin msg (1?) + select (~3) + footer (1) = ~9
-    const successLogHeight = Math.max(3, height - 9 - (pinMessage ? 1 : 0));
+    // Header (1) + gap (1) + process info (1) + gap (1) + border (2) + pin msg (1?) + select (~3) + footer (1) = ~11
+    const successLogHeight = Math.max(3, height - 11 - (pinMessage ? 1 : 0));
     const successCardWidth = Math.max(30, (panelMode ? width - 4 : width) - 2);
 
     return (
@@ -363,6 +399,15 @@ export function CommandExecution({
           <Text color={inkColors.accent} bold>{"✓"} {cmdDisplay}</Text>
           <ToolBadge tool={tool} />
           <Text color="green">● completed</Text>
+        </Box>
+
+        {/* Process info */}
+        <Box marginBottom={1} gap={2}>
+          {pid && <Text dimColor>PID {pid}</Text>}
+          {processId && <Text dimColor>ID {processId}</Text>}
+          <Text dimColor>CWD {shortenPath(cwd)}</Text>
+          {startedAt && <Text dimColor>DURATION {formatDuration(startedAt)}</Text>}
+          {result?.exitCode !== undefined && result?.exitCode !== null && <Text dimColor>EXIT {result.exitCode}</Text>}
         </Box>
 
         {pinMessage && (
@@ -486,8 +531,8 @@ export function CommandExecution({
 
   const errorOutput = [result?.stdout, result?.stderr].filter(Boolean).join("\n");
   const errorLines = errorOutput ? stripAnsi(errorOutput).split("\n") : [];
-  // Header (1) + gap (1) + border (2) + spawnError extra (~3) + copyMessage (1?) + selectList (~errorItems) + footer
-  const errorLogHeight = Math.max(3, height - 8 - Math.min(errorItems.length, 6) - (copyMessage ? 1 : 0));
+  // Header (1) + gap (1) + process info (1) + gap (1) + border (2) + spawnError extra (~3) + copyMessage (1?) + selectList (~errorItems) + footer
+  const errorLogHeight = Math.max(3, height - 10 - Math.min(errorItems.length, 6) - (copyMessage ? 1 : 0));
   const errorCardWidth = Math.max(30, (panelMode ? width - 4 : width) - 2);
 
   const errorStatusLabel = result?.spawnError
@@ -501,6 +546,14 @@ export function CommandExecution({
         <Text color="red" bold>{"✗"} {cmdDisplay}</Text>
         <ToolBadge tool={tool} />
         <Text color="red">● {errorStatusLabel}</Text>
+      </Box>
+
+      {/* Process info */}
+      <Box marginBottom={1} gap={2}>
+        {pid && <Text dimColor>PID {pid}</Text>}
+        {processId && <Text dimColor>ID {processId}</Text>}
+        <Text dimColor>CWD {shortenPath(cwd)}</Text>
+        {startedAt && <Text dimColor>DURATION {formatDuration(startedAt)}</Text>}
       </Box>
 
       {result?.spawnError && (

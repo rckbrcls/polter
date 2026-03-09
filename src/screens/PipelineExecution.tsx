@@ -44,16 +44,20 @@ export function PipelineExecution({
 
   useEffect(() => {
     if (!pipeline) return;
+    let cancelled = false;
 
     executePipeline(pipeline, (p) => {
+      if (cancelled) return;
       setProgress({ ...p });
       if (p.done) {
         setResults(p.stepResults);
         setPhase("done");
       }
     }).catch(() => {
-      setPhase("done");
+      if (!cancelled) setPhase("done");
     });
+
+    return () => { cancelled = true; };
   }, [pipeline]);
 
   if (!pipeline) {

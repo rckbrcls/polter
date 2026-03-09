@@ -4,7 +4,7 @@ export { features, getFeatureById } from "./data/features.js";
 export { getFlagsForTool, toolFlags } from "./data/flags.js";
 
 // Execution
-export { runCommand, type RunResult, type CommandExecution } from "./lib/runner.js";
+export { runCommand, runCommandWithRetry, type RunResult, type CommandExecution } from "./lib/runner.js";
 export { resolveToolCommand, getToolInfo, getToolDisplayName, type ToolInfo } from "./lib/toolResolver.js";
 
 // Package Manager

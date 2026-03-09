@@ -1,6 +1,10 @@
-import { spawn, type ChildProcess } from "node:child_process";
+import type { ChildProcess } from "node:child_process";
 import { join } from "node:path";
+import { execa } from "execa";
+import ms from "ms";
+import { onExit } from "signal-exit";
 import { findNearestPackageRoot } from "./packageRoot.js";
+import { processEvents } from "./processEvents.js";
 
 // --- Types ---
 
@@ -85,7 +89,7 @@ function registerCleanup(): void {
   if (cleanupRegistered) return;
   cleanupRegistered = true;
 
-  const cleanup = () => {
+  onExit(() => {
     for (const proc of registry.values()) {
       if (proc.status === "running" && proc.child.pid) {
         try {
@@ -95,11 +99,7 @@ function registerCleanup(): void {
         }
       }
     }
-  };
-
-  process.on("exit", cleanup);
-  process.on("SIGINT", () => { cleanup(); process.exit(130); });
-  process.on("SIGTERM", () => { cleanup(); process.exit(143); });
+  }, { alwaysLast: true });
 }
 
 // --- Public API ---
@@ -119,70 +119,7 @@ export function generateProcessId(command: string, args: string[]): string {
   return `${slug}-${i}`;
 }
 
-export function startProcess(
-  id: string,
-  command: string,
-  args: string[] = [],
-  cwd: string = process.cwd(),
-  env?: NodeJS.ProcessEnv,
-): ProcessInfo {
-  const existing = registry.get(id);
-  if (existing && existing.status === "running") {
-    throw new Error(`Process "${id}" is already running (pid ${existing.child.pid})`);
-  }
-
-  registerCleanup();
-
-  const child = spawn(command, args, {
-    cwd,
-    env: env ?? process.env,
-    detached: true,
-    stdio: ["ignore", "pipe", "pipe"],
-    shell: true,
-  });
-
-  const tracked: TrackedProcess = {
-    id,
-    command,
-    args,
-    cwd,
-    child,
-    status: "running",
-    exitCode: null,
-    signal: null,
-    startedAt: new Date(),
-    exitedAt: null,
-    stdout: createRingBuffer(),
-    stderr: createRingBuffer(),
-  };
-
-  child.stdout?.on("data", (data: Buffer) => {
-    appendToBuffer(tracked.stdout, data.toString());
-  });
-
-  child.stderr?.on("data", (data: Buffer) => {
-    appendToBuffer(tracked.stderr, data.toString());
-  });
-
-  child.on("exit", (code, signal) => {
-    tracked.status = "exited";
-    tracked.exitCode = code;
-    tracked.signal = signal;
-    tracked.exitedAt = new Date();
-  });
-
-  child.on("error", (err) => {
-    tracked.status = "errored";
-    tracked.exitedAt = new Date();
-    appendToBuffer(tracked.stderr, `spawn error: ${err.message}\n`);
-  });
-
-  registry.set(id, tracked);
-
-  return toProcessInfo(tracked);
-}
-
-export function registerForegroundProcess(
+function trackChild(
   id: string,
   command: string,
   args: string[],
@@ -212,11 +149,15 @@ export function registerForegroundProcess(
   };
 
   child.stdout?.on("data", (data: Buffer) => {
-    appendToBuffer(tracked.stdout, data.toString());
+    const text = data.toString();
+    appendToBuffer(tracked.stdout, text);
+    processEvents.emit("output", id, "stdout", text);
   });
 
   child.stderr?.on("data", (data: Buffer) => {
-    appendToBuffer(tracked.stderr, data.toString());
+    const text = data.toString();
+    appendToBuffer(tracked.stderr, text);
+    processEvents.emit("output", id, "stderr", text);
   });
 
   child.on("exit", (code, signal) => {
@@ -224,17 +165,52 @@ export function registerForegroundProcess(
     tracked.exitCode = code;
     tracked.signal = signal;
     tracked.exitedAt = new Date();
+    processEvents.emit("stopped", toProcessInfo(tracked));
   });
 
   child.on("error", (err) => {
     tracked.status = "errored";
     tracked.exitedAt = new Date();
     appendToBuffer(tracked.stderr, `spawn error: ${err.message}\n`);
+    processEvents.emit("errored", toProcessInfo(tracked), err.message);
   });
 
   registry.set(id, tracked);
 
-  return toProcessInfo(tracked);
+  const info = toProcessInfo(tracked);
+  processEvents.emit("started", info);
+  return info;
+}
+
+export function startProcess(
+  id: string,
+  command: string,
+  args: string[] = [],
+  cwd: string = process.cwd(),
+  env?: NodeJS.ProcessEnv,
+): ProcessInfo {
+  const subprocess = execa(command, args, {
+    cwd,
+    env: env ?? process.env,
+    detached: true,
+    stdin: "ignore",
+    stdout: "pipe",
+    stderr: "pipe",
+    shell: true,
+    reject: false,
+  });
+
+  return trackChild(id, command, args, cwd, subprocess as unknown as ChildProcess);
+}
+
+export function registerForegroundProcess(
+  id: string,
+  command: string,
+  args: string[],
+  cwd: string,
+  child: ChildProcess | { pid?: number; stdout: NodeJS.ReadableStream | null; stderr: NodeJS.ReadableStream | null; on: ChildProcess["on"]; once: ChildProcess["once"]; removeListener: ChildProcess["removeListener"] },
+): ProcessInfo {
+  return trackChild(id, command, args, cwd, child as ChildProcess);
 }
 
 export function stopProcess(id: string): Promise<ProcessInfo> {
@@ -247,7 +223,7 @@ export function stopProcess(id: string): Promise<ProcessInfo> {
       if (proc.status === "running" && proc.child.pid) {
         try { process.kill(-proc.child.pid, "SIGKILL"); } catch { /* already gone */ }
       }
-    }, 5000);
+    }, ms("5s"));
 
     const onDone = () => {
       clearTimeout(escalateTimer);
@@ -270,7 +246,7 @@ export function stopProcess(id: string): Promise<ProcessInfo> {
 }
 
 export function listProcesses(): ProcessInfo[] {
-  return Array.from(registry.values()).map(toProcessInfo);
+  return Array.from(registry.values()).map(toProcessInfo).reverse();
 }
 
 export function getProcessOutput(id: string, tail?: number, stream?: "stdout" | "stderr" | "both"): ProcessOutput {

@@ -29,7 +29,6 @@ npx vitest run src/lib/runner.test.ts  # Run a single test file
 - **Pipelines** (`src/pipeline/`) — Multi-step command sequences. `engine.ts` executes steps sequentially with progress callbacks. `storage.ts` persists pipelines to project or global config.
 - **Declarative** (`src/declarative/`) — `polter.yaml` schema in `schema.ts`. `parser.ts` reads YAML, `planner.ts` diffs desired vs current state, `applier.ts` executes plan actions. `status.ts` reads current project state.
 - **Config** (`src/config/`) — Project config (`polter.config.json`) and global settings via `conf` package.
-- **Apps** (`src/apps/`) — Internal ops tooling (release workflows, bootstrap paths).
 - **Package Manager** (`src/lib/pkgManager.ts`) — Auto-detects npm/pnpm/yarn/bun from lockfiles and translates commands between managers.
 
 ### Key Types (`src/data/types.ts`)
@@ -55,3 +54,22 @@ npx vitest run src/lib/runner.test.ts  # Run a single test file
 - React JSX for TUI components (Ink 6 / React 19)
 - No classes — functions and plain objects throughout
 - `picocolors` for terminal colors outside React components
+
+## Code Quality Patterns
+
+### Caching
+- Caches que dependem de contexto (cwd, projeto, ambiente) devem usar chave composta (`${id}:${cwd}`), nunca apenas o ID. Previne dados stale ao trocar de projeto.
+
+### Error Handling
+- **MCP handlers**: todo handler que chama funções async deve ter try-catch e retornar `{ isError: true }` em caso de erro. Nunca deixar exceções subirem sem tratamento — isso crasha o server MCP sem resposta ao client.
+- **Promises fire-and-forget**: usar `void fn()` para sinalizar intenção explícita. Evita warnings de unhandled rejection.
+- **Spawn de processos externos**: sempre envolver em try-catch. O comando pode não existir no sistema (`ENOENT`).
+
+### Validação em Boundaries
+- **IPC server / input externo**: nunca usar `params as { ... }` diretamente. Validar campos obrigatórios antes de passar para funções downstream. Usar helper `assertParam()` que lança erro claro com o nome do campo.
+- **Parsers (YAML, JSON)**: validar campos obrigatórios de primeiro nível após o parse e antes de qualquer type cast. Retornar `undefined` se inválido — erros downstream são difíceis de diagnosticar.
+- Não validar código interno entre módulos — confiar nos tipos do TypeScript. Validação apenas nas fronteiras do sistema.
+
+### Cross-platform
+- Clipboard, browser open, e qualquer interação com o OS devem suportar darwin, win32 e linux.
+- Usar `process.platform` para branching. Sempre ter fallback com try-catch para ambientes sem a ferramenta.

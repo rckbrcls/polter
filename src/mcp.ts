@@ -4,6 +4,8 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import crypto from "node:crypto";
+import ms from "ms";
+import pRetry from "p-retry";
 
 import {
   allCommands,
@@ -34,7 +36,7 @@ import {
   type CliToolId,
   type PipelineStep,
 } from "./api.js";
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync } from "./lib/fs.js";
 import { join } from "node:path";
 import { createIpcClient } from "./lib/ipcClient.js";
 import { getSocketPath } from "./lib/processManager.js";
@@ -51,7 +53,7 @@ async function withTuiConnection<T>(
 
   try {
     const client = createIpcClient(socketPath);
-    await client.connect();
+    await pRetry(() => client.connect(), { retries: 2, minTimeout: ms("300ms") });
     const result = await client.call(method, params);
     client.disconnect();
     return result as T;
@@ -162,9 +164,11 @@ server.tool(
 server.tool(
   "polter_list_pipelines",
   "List all saved pipelines (multi-step command sequences) from both project and global scope.",
-  {},
-  async () => {
-    const pipelines = getAllPipelines();
+  {
+    cwd: z.string().optional().describe("Project directory. Defaults to current directory."),
+  },
+  async ({ cwd }) => {
+    const pipelines = getAllPipelines(cwd);
     return {
       content: [{ type: "text" as const, text: JSON.stringify(pipelines, null, 2) }],
     };
@@ -175,9 +179,13 @@ server.tool(
 server.tool(
   "polter_run_pipeline",
   "Execute a saved pipeline by name. Returns results for each step.",
-  { name: z.string() },
-  async ({ name }) => {
-    const pipeline = findPipelineByName(name);
+  {
+    name: z.string(),
+    cwd: z.string().optional().describe("Project directory. Defaults to current directory."),
+  },
+  async ({ name, cwd }) => {
+    const workDir = cwd ?? process.cwd();
+    const pipeline = findPipelineByName(name, workDir);
     if (!pipeline) {
       return {
         content: [{ type: "text" as const, text: JSON.stringify({ error: `Pipeline not found: ${name}` }) }],
@@ -185,7 +193,7 @@ server.tool(
       };
     }
 
-    const results = await executePipeline(pipeline, () => {}, process.cwd());
+    const results = await executePipeline(pipeline, () => {}, workDir);
     const success = results.every((r) => r.status === "success" || r.status === "skipped");
     return {
       content: [{
@@ -212,6 +220,7 @@ server.tool(
     name: z.string().describe("Pipeline name"),
     description: z.string().optional().describe("Pipeline description"),
     source: z.enum(["project", "global"]).default("project").describe("Where to save the pipeline"),
+    cwd: z.string().optional().describe("Project directory. Defaults to current directory."),
     steps: z.array(z.object({
       commandId: z.string().describe("Command ID (e.g. 'git:commit', 'vercel:deploy:prod')"),
       args: z.array(z.string()).default([]).describe("Command arguments"),
@@ -220,9 +229,9 @@ server.tool(
       label: z.string().optional().describe("Human-readable step label"),
     })).min(1).describe("Pipeline steps"),
   },
-  async ({ name, description, source, steps }) => {
+  async ({ name, description, source, cwd, steps }) => {
     // Check for duplicate name
-    const existing = findPipelineByName(name);
+    const existing = findPipelineByName(name, cwd);
     if (existing) {
       return {
         content: [{ type: "text" as const, text: JSON.stringify({ error: `Pipeline already exists: ${name}. Use polter_update_pipeline to modify it.` }) }],
@@ -256,7 +265,13 @@ server.tool(
       updatedAt: now,
     };
 
-    savePipeline(pipeline, source);
+    const saved = savePipeline(pipeline, source, cwd);
+    if (!saved) {
+      return {
+        content: [{ type: "text" as const, text: JSON.stringify({ error: "Could not save pipeline: no project root found. Pass 'cwd' pointing to a directory with package.json, or use source: 'global'." }) }],
+        isError: true,
+      };
+    }
 
     return {
       content: [{ type: "text" as const, text: JSON.stringify({ success: true, pipeline }, null, 2) }],
@@ -271,6 +286,7 @@ server.tool(
   {
     name: z.string().describe("Pipeline name to update"),
     description: z.string().optional().describe("New description"),
+    cwd: z.string().optional().describe("Project directory. Defaults to current directory."),
     steps: z.array(z.object({
       commandId: z.string(),
       args: z.array(z.string()).default([]),
@@ -279,8 +295,8 @@ server.tool(
       label: z.string().optional(),
     })).optional().describe("New steps (replaces all existing steps)"),
   },
-  async ({ name, description, steps }) => {
-    const existing = findPipelineByName(name);
+  async ({ name, description, cwd, steps }) => {
+    const existing = findPipelineByName(name, cwd);
     if (!existing) {
       return {
         content: [{ type: "text" as const, text: JSON.stringify({ error: `Pipeline not found: ${name}` }) }],
@@ -314,7 +330,13 @@ server.tool(
       updatedAt: new Date().toISOString(),
     };
 
-    savePipeline(updated, existing.source);
+    const saved = savePipeline(updated, existing.source, cwd);
+    if (!saved) {
+      return {
+        content: [{ type: "text" as const, text: JSON.stringify({ error: "Could not save pipeline: no project root found. Pass 'cwd' pointing to a directory with package.json, or use source: 'global'." }) }],
+        isError: true,
+      };
+    }
 
     return {
       content: [{ type: "text" as const, text: JSON.stringify({ success: true, pipeline: updated }, null, 2) }],
@@ -326,9 +348,12 @@ server.tool(
 server.tool(
   "polter_delete_pipeline",
   "Delete a saved pipeline by name.",
-  { name: z.string().describe("Pipeline name to delete") },
-  async ({ name }) => {
-    const existing = findPipelineByName(name);
+  {
+    name: z.string().describe("Pipeline name to delete"),
+    cwd: z.string().optional().describe("Project directory. Defaults to current directory."),
+  },
+  async ({ name, cwd }) => {
+    const existing = findPipelineByName(name, cwd);
     if (!existing) {
       return {
         content: [{ type: "text" as const, text: JSON.stringify({ error: `Pipeline not found: ${name}` }) }],
@@ -336,7 +361,7 @@ server.tool(
       };
     }
 
-    deletePipeline(existing.id, existing.source);
+    deletePipeline(existing.id, existing.source, cwd);
 
     return {
       content: [{ type: "text" as const, text: JSON.stringify({ success: true, deleted: name }) }],
@@ -386,22 +411,29 @@ server.tool(
       };
     }
 
-    const results = await applyActions(plan.actions);
-    return {
-      content: [{
-        type: "text" as const,
-        text: JSON.stringify({
-          noChanges: false,
-          results: results.map((r) => ({
-            action: r.action.description,
-            tool: r.action.tool,
-            success: r.success,
-            stdout: r.result.stdout,
-            stderr: r.result.stderr,
-          })),
-        }, null, 2),
-      }],
-    };
+    try {
+      const results = await applyActions(plan.actions);
+      return {
+        content: [{
+          type: "text" as const,
+          text: JSON.stringify({
+            noChanges: false,
+            results: results.map((r) => ({
+              action: r.action.description,
+              tool: r.action.tool,
+              success: r.success,
+              stdout: r.result.stdout,
+              stderr: r.result.stderr,
+            })),
+          }, null, 2),
+        }],
+      };
+    } catch (err) {
+      return {
+        content: [{ type: "text" as const, text: JSON.stringify({ error: (err as Error).message }) }],
+        isError: true,
+      };
+    }
   },
 );
 
@@ -479,7 +511,7 @@ server.tool(
         { command: mgr.command, args: translated.args, cwd, id },
         () => startProcess(id, mgr.command, translated.args, cwd),
       );
-      await new Promise((r) => setTimeout(r, 500));
+      await new Promise((r) => setTimeout(r, ms("500ms")));
       const output = await withTuiConnection(
         "ps.logs",
         { id, tail: 20 },
@@ -800,7 +832,7 @@ server.tool(
         { command: mgr.command, args: runArgs, cwd, id },
         () => startProcess(id, mgr.command, runArgs, cwd),
       );
-      await new Promise((r) => setTimeout(r, 500));
+      await new Promise((r) => setTimeout(r, ms("500ms")));
       const output = await withTuiConnection(
         "ps.logs",
         { id, tail },

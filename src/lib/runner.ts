@@ -1,6 +1,7 @@
-import { spawn, spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { execa, execaSync, type ResultPromise } from "execa";
+import { existsSync } from "./fs.js";
 import { delimiter, dirname, join, resolve } from "node:path";
+import pRetry from "p-retry";
 
 export interface RunResult {
   exitCode: number | null;
@@ -91,7 +92,8 @@ export function resolveSupabaseCommand(
 export interface RunHandle {
   promise: Promise<RunResult>;
   abort: () => void;
-  child: import("node:child_process").ChildProcess;
+  pid: number | undefined;
+  subprocess: ResultPromise;
 }
 
 export function runCommand(
@@ -100,61 +102,65 @@ export function runCommand(
   cwd: string = process.cwd(),
   options?: { quiet?: boolean; onData?: (stdout: string, stderr: string) => void },
 ): RunHandle {
-  let stdout = "";
-  let stderr = "";
+  let stdoutBuf = "";
+  let stderrBuf = "";
   const resolvedExecution =
     typeof execution === "string" ? { command: execution } : execution;
 
-  const child = spawn(resolvedExecution.command, args, {
+  const subprocess = execa(resolvedExecution.command, args, {
     cwd,
     env: resolvedExecution.env,
     shell: true,
     detached: true,
-    stdio: [options?.quiet ? "pipe" : "inherit", "pipe", "pipe"],
+    stdin: options?.quiet ? "pipe" : "inherit",
+    stdout: "pipe",
+    stderr: "pipe",
+    reject: false,
   });
 
   if (options?.quiet) {
-    child.stdin?.end();
+    subprocess.stdin?.end();
   }
 
-  const promise = new Promise<RunResult>((resolve) => {
-    child.stdout?.on("data", (data: Buffer) => {
-      const text = data.toString();
-      stdout += text;
-      if (!options?.quiet) process.stdout.write(text);
-      options?.onData?.(stdout, stderr);
-    });
-
-    child.stderr?.on("data", (data: Buffer) => {
-      const text = data.toString();
-      stderr += text;
-      if (!options?.quiet) process.stderr.write(text);
-      options?.onData?.(stdout, stderr);
-    });
-
-    child.on("error", (err: Error) => {
-      resolve({
-        exitCode: null,
-        signal: null,
-        stdout,
-        stderr,
-        spawnError: err.message,
-      });
-    });
-
-    child.on("exit", (code: number | null, signal: NodeJS.Signals | null) => {
-      resolve({ exitCode: code, signal, stdout, stderr });
-    });
+  subprocess.stdout?.on("data", (data: Buffer) => {
+    const text = data.toString();
+    stdoutBuf += text;
+    if (!options?.quiet) process.stdout.write(text);
+    options?.onData?.(stdoutBuf, stderrBuf);
   });
+
+  subprocess.stderr?.on("data", (data: Buffer) => {
+    const text = data.toString();
+    stderrBuf += text;
+    if (!options?.quiet) process.stderr.write(text);
+    options?.onData?.(stdoutBuf, stderrBuf);
+  });
+
+  const promise = subprocess.then(
+    (result) => ({
+      exitCode: result.exitCode ?? null,
+      signal: (result.signal ?? null) as NodeJS.Signals | null,
+      stdout: stdoutBuf,
+      stderr: stderrBuf,
+    }),
+    (err: Error) => ({
+      exitCode: null,
+      signal: null,
+      stdout: stdoutBuf,
+      stderr: stderrBuf,
+      spawnError: err.message,
+    }),
+  );
 
   return {
     promise,
     abort: () => {
-      if (child.pid) {
-        try { process.kill(-child.pid, "SIGTERM"); } catch { /* already gone */ }
+      if (subprocess.pid) {
+        try { process.kill(-subprocess.pid, "SIGTERM"); } catch { /* already gone */ }
       }
     },
-    child,
+    pid: subprocess.pid,
+    subprocess,
   };
 }
 
@@ -165,19 +171,37 @@ export function runInteractiveCommand(
 ): RunResult {
   const resolved =
     typeof execution === "string" ? { command: execution } : execution;
-  const result = spawnSync(resolved.command, args, {
-    cwd,
-    env: resolved.env,
-    shell: true,
-    stdio: "inherit",
-  });
-  return {
-    exitCode: result.status,
-    signal: result.signal,
-    stdout: "",
-    stderr: "",
-    spawnError: result.error?.message,
-  };
+  try {
+    const result = execaSync(resolved.command, args, {
+      cwd,
+      env: resolved.env,
+      shell: true,
+      stdio: "inherit",
+    });
+    return {
+      exitCode: result.exitCode ?? null,
+      signal: null,
+      stdout: "",
+      stderr: "",
+    };
+  } catch (err) {
+    if (err && typeof err === "object" && "exitCode" in err) {
+      const execaErr = err as { exitCode: number; signal?: string; message?: string };
+      return {
+        exitCode: execaErr.exitCode,
+        signal: (execaErr.signal ?? null) as NodeJS.Signals | null,
+        stdout: "",
+        stderr: "",
+      };
+    }
+    return {
+      exitCode: null,
+      signal: null,
+      stdout: "",
+      stderr: "",
+      spawnError: (err as Error).message,
+    };
+  }
 }
 
 export async function runSupabaseCommand(
@@ -185,4 +209,25 @@ export async function runSupabaseCommand(
   cwd: string = process.cwd(),
 ): Promise<RunResult> {
   return runCommand(resolveSupabaseCommand(cwd), args, cwd).promise;
+}
+
+export async function runCommandWithRetry(
+  execution: string | CommandExecution,
+  args: string[],
+  cwd: string = process.cwd(),
+  options?: { quiet?: boolean; onData?: (stdout: string, stderr: string) => void },
+): Promise<RunResult> {
+  return pRetry(
+    async () => {
+      const result = await runCommand(execution, args, cwd, options).promise;
+      if (result.spawnError && !result.spawnError.includes("ENOENT")) {
+        throw new Error(result.spawnError);
+      }
+      return result;
+    },
+    {
+      retries: 2,
+      shouldRetry: ({ error }) => !error.message.includes("ENOENT"),
+    },
+  );
 }

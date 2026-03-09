@@ -3,6 +3,7 @@ import { runCommand, type RunResult } from "../lib/runner.js";
 import { resolveToolCommand } from "../lib/toolResolver.js";
 import { getCommandById } from "../data/commands/index.js";
 import { resolvePkgArgs } from "../lib/pkgManager.js";
+import { pipelineEvents } from "./pipelineEvents.js";
 
 export type StepStatus = "pending" | "running" | "success" | "error" | "skipped";
 
@@ -42,6 +43,7 @@ export async function executePipeline(
     }
 
     stepResults[i] = { step, status: "running" };
+    pipelineEvents.emit("stepStarted", step, i);
     onProgress({ stepResults: [...stepResults], currentStepIndex: i, done: false });
 
     const cmdDef = getCommandById(step.commandId);
@@ -69,6 +71,8 @@ export async function executePipeline(
       result,
     };
 
+    pipelineEvents.emit("stepCompleted", stepResults[i]!, i);
+
     if (!success && !step.continueOnError) {
       aborted = true;
     }
@@ -81,6 +85,8 @@ export async function executePipeline(
     currentStepIndex: pipeline.steps.length - 1,
     done: true,
   });
+
+  pipelineEvents.emit("pipelineCompleted", stepResults);
 
   return stepResults;
 }

@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from "../lib/fs.js";
 import { join } from "node:path";
 import { findNearestPackageRoot } from "../lib/packageRoot.js";
 import type { ProjectConfig, Pipeline } from "../data/types.js";

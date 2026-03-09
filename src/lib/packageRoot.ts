@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync } from "./fs.js";
 import { dirname, join, resolve } from "node:path";
 
 const rootCache = new Map<string, string | undefined>();

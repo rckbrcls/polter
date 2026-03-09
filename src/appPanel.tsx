@@ -14,6 +14,7 @@ import { PanelFooter, type KeyHint } from "./components/PanelFooter.js";
 import { Modal } from "./components/Modal.js";
 import { FeatureCommands } from "./components/FeatureCommands.js";
 import { PinnedCommands } from "./components/PinnedCommands.js";
+
 import { CommandArgs } from "./screens/CommandArgs.js";
 import { CustomCommand } from "./screens/CustomCommand.js";
 import { FlagSelection } from "./screens/FlagSelection.js";
@@ -136,10 +137,6 @@ export function AppPanel(): React.ReactElement {
   const sidebarItems = useSidebarItems();
   const modal = useModal();
 
-  const refreshPins = React.useCallback(() => {
-    // Pins section is always visible; no need to toggle sidebar items
-  }, []);
-
   const singlePanel = width < 60 || height < 15;
 
   const handleExit = () => {
@@ -259,7 +256,6 @@ export function AppPanel(): React.ReactElement {
           <PinnedCommands
             onNavigate={nav.navigateInner}
             onBack={focus.focusSidebar}
-            onPinsChanged={refreshPins}
             width={mainContentWidth - 2}
             height={mainContentHeight}
             isInputActive={focus.isMainFocused}
@@ -277,7 +273,6 @@ export function AppPanel(): React.ReactElement {
             onNavigate={nav.navigateInner}
             onExit={handleExit}
             onBack={focus.focusSidebar}
-            onPinsChanged={refreshPins}
             width={mainContentWidth - 2}
             height={mainContentHeight}
             isInputActive={focus.isMainFocused}
@@ -449,6 +444,7 @@ export function AppPanel(): React.ReactElement {
             tool={nav.innerParams.tool}
             rawCommand={nav.innerParams.rawCommand}
             interactive={nav.innerParams.interactive}
+            cwd={nav.innerParams.cwd}
             onBack={nav.goBackInner}
             onHome={nav.goHomeInner}
             onExit={handleExit}

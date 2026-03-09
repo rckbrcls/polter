@@ -1,6 +1,7 @@
 import net from "node:net";
-import { mkdirSync, unlinkSync, existsSync } from "node:fs";
+import { mkdirSync, unlinkSync, existsSync } from "./fs.js";
 import { dirname } from "node:path";
+import { z } from "zod";
 import {
   serializeMessage,
   parseMessages,
@@ -20,44 +21,65 @@ import {
 
 type RpcHandler = (params: Record<string, unknown>) => unknown | Promise<unknown>;
 
+const PsStartParams = z.object({
+  command: z.string(),
+  args: z.array(z.string()).default([]),
+  cwd: z.string().default(process.cwd()),
+  id: z.string().optional(),
+});
+
+const PsIdParams = z.object({
+  id: z.string(),
+});
+
+const PsLogsParams = z.object({
+  id: z.string(),
+  tail: z.number().optional(),
+  stream: z.enum(["stdout", "stderr", "both"]).optional(),
+});
+
+const PsFindByCwdParams = z.object({
+  cwd: z.string(),
+  filter: z.string().optional(),
+});
+
+const PsFindRunningParams = z.object({
+  cwd: z.string(),
+  command: z.string(),
+  args: z.array(z.string()),
+});
+
+const PsGenerateIdParams = z.object({
+  command: z.string(),
+  args: z.array(z.string()),
+});
+
 const handlers: Record<string, RpcHandler> = {
   "ps.list": () => listProcesses(),
 
   "ps.start": (params) => {
-    const { command, args, cwd, id } = params as {
-      command: string;
-      args?: string[];
-      cwd?: string;
-      id?: string;
-    };
-    const processArgs = args ?? [];
-    const processId = id ?? generateProcessId(command, processArgs);
-    const processCwd = cwd ?? process.cwd();
-    return startProcess(processId, command, processArgs, processCwd);
+    const { command, args, cwd, id } = PsStartParams.parse(params);
+    return startProcess(id ?? generateProcessId(command, args), command, args, cwd);
   },
 
   "ps.stop": async (params) => {
-    const { id } = params as { id: string };
+    const { id } = PsIdParams.parse(params);
     return stopProcess(id);
   },
 
   "ps.logs": (params) => {
-    const { id, tail, stream } = params as {
-      id: string;
-      tail?: number;
-      stream?: "stdout" | "stderr" | "both";
-    };
+    const { id, tail, stream } = PsLogsParams.parse(params);
     return getProcessOutput(id, tail, stream);
   },
 
   "ps.remove": (params) => {
-    const { id } = params as { id: string };
+    const { id } = PsIdParams.parse(params);
     removeProcess(id);
     return null;
   },
 
   "ps.find_by_cwd": (params) => {
-    const { cwd, filter } = params as { cwd: string; filter?: string };
+    const { cwd, filter } = PsFindByCwdParams.parse(params);
     let processes = findProcessesByCwd(cwd);
     if (filter) {
       const f = filter.toLowerCase();
@@ -69,16 +91,12 @@ const handlers: Record<string, RpcHandler> = {
   },
 
   "ps.find_running": (params) => {
-    const { cwd, command, args } = params as {
-      cwd: string;
-      command: string;
-      args: string[];
-    };
+    const { cwd, command, args } = PsFindRunningParams.parse(params);
     return findRunningByCommand(cwd, command, args) ?? null;
   },
 
   "ps.generate_id": (params) => {
-    const { command, args } = params as { command: string; args: string[] };
+    const { command, args } = PsGenerateIdParams.parse(params);
     return generateProcessId(command, args);
   },
 

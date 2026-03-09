@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Box, Text } from "ink";
 import { ghost as ghostData, inkColors, VERSION } from "../theme.js";
-import { getToolLinkInfo } from "../lib/toolResolver.js";
+import { getToolLinkInfo, type ToolLinkInfo } from "../lib/toolResolver.js";
 import { getMcpStatusInfo } from "../lib/mcpInstaller.js";
 import { listProcesses } from "../lib/processManager.js";
 import { toolColors } from "./ToolBadge.js";
@@ -12,8 +12,24 @@ interface GhostBannerProps {
 }
 
 const McpBadge = React.memo(function McpBadge(): React.ReactElement {
-  const info = getMcpStatusInfo();
-  const registered = info.scopes.some((s) => s.registered);
+  const [registered, setRegistered] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const info = getMcpStatusInfo();
+      setRegistered(info.scopes.some((s) => s.registered));
+    }, 0);
+    return () => clearTimeout(t);
+  }, []);
+
+  if (registered === null) {
+    return (
+      <Box borderStyle="round" borderColor="gray">
+        <Text dimColor>mcp:…</Text>
+      </Box>
+    );
+  }
+
   const color = registered ? "#3ECF8E" : "red";
   return (
     <Box borderStyle="round" borderColor={color}>
@@ -25,14 +41,12 @@ const McpBadge = React.memo(function McpBadge(): React.ReactElement {
 });
 
 function ProcessBadge(): React.ReactElement {
-  const [count, setCount] = useState(() => {
-    return listProcesses().filter((p) => p.status === "running").length;
-  });
+  const [count, setCount] = useState(0);
 
   useEffect(() => {
+    setCount(listProcesses().filter((p) => p.status === "running").length);
     const id = setInterval(() => {
-      const c = listProcesses().filter((p) => p.status === "running").length;
-      setCount(c);
+      setCount(listProcesses().filter((p) => p.status === "running").length);
     }, 2000);
     return () => clearInterval(id);
   }, []);
@@ -45,20 +59,37 @@ function ProcessBadge(): React.ReactElement {
   );
 }
 
+const TOOL_IDS = ["supabase", "gh", "vercel"] as const;
+
 const ToolStatusBadges = React.memo(function ToolStatusBadges(): React.ReactElement {
-  const tools = (["supabase", "gh", "vercel"] as const).map((id) => getToolLinkInfo(id));
+  const [tools, setTools] = useState<ToolLinkInfo[] | null>(null);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setTools(TOOL_IDS.map((id) => getToolLinkInfo(id)));
+    }, 0);
+    return () => clearTimeout(t);
+  }, []);
+
   return (
     <Box gap={1}>
-      {tools.map((t) => {
-        const color = t.linked ? toolColors[t.id] : t.installed ? "yellow" : "red";
-        return (
-          <Box key={t.id} borderStyle="round" borderColor={color}>
-            <Text color={color} dimColor={!t.installed}>
-              {t.id}:{t.linked ? "linked" : t.installed ? "ok" : "x"}
-            </Text>
-          </Box>
-        );
-      })}
+      {tools
+        ? tools.map((t) => {
+            const color = t.linked ? toolColors[t.id] : t.installed ? "yellow" : "red";
+            return (
+              <Box key={t.id} borderStyle="round" borderColor={color}>
+                <Text color={color} dimColor={!t.installed}>
+                  {t.id}:{t.linked ? "linked" : t.installed ? "ok" : "x"}
+                </Text>
+              </Box>
+            );
+          })
+        : TOOL_IDS.map((id) => (
+            <Box key={id} borderStyle="round" borderColor="gray">
+              <Text dimColor>{id}:…</Text>
+            </Box>
+          ))
+      }
       <McpBadge />
     </Box>
   );
@@ -84,6 +115,30 @@ export function GhostBanner({ width = 80, compact = false }: GhostBannerProps): 
       );
     }
 
+    if (width >= 100) {
+      // Wide terminal: ghost art + compact info
+      return (
+        <Box flexDirection="row" borderStyle="round" borderColor={inkColors.accent} gap={1} alignItems="flex-start">
+          <Box flexDirection="column">
+            {ghostData.art.map((line, i) => (
+              <Text key={i} color={inkColors.accent}>{line}</Text>
+            ))}
+          </Box>
+          <Box flexDirection="column" alignItems="flex-start">
+            <Box gap={1}>
+              <Box borderStyle="round" borderColor={inkColors.accent} paddingX={1} gap={2}>
+                <Text color={inkColors.accent} bold>POLTER</Text>
+                <Text dimColor>v{VERSION}</Text>
+                <Text color="yellow">alpha</Text>
+              </Box>
+              <ProcessBadge />
+            </Box>
+            <ToolStatusBadges />
+          </Box>
+        </Box>
+      );
+    }
+
     // Compact: original ghost art + info on the right
     return (
       <Box flexDirection="row" borderStyle="round" borderColor={inkColors.accent} gap={1} alignItems="flex-start">
@@ -101,9 +156,7 @@ export function GhostBanner({ width = 80, compact = false }: GhostBannerProps): 
             </Box>
             <ProcessBadge />
           </Box>
-          <Box borderStyle="round" borderColor={inkColors.accent} paddingX={1}>
-            <ToolStatusBadges />
-          </Box>
+          <ToolStatusBadges />
         </Box>
       </Box>
     );

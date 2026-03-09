@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync } from "./fs.js";
 import { join, dirname } from "node:path";
 
 export type PkgManagerId = "npm" | "pnpm" | "yarn" | "bun";

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Box, Text, useInput } from "ink";
+import ms from "ms";
 import { SelectList } from "../components/SelectList.js";
 import { TextPrompt } from "../components/TextPrompt.js";
 import { ToolBadge } from "../components/ToolBadge.js";
@@ -42,7 +43,11 @@ export function CommandArgs({
     [cmdDef],
   );
 
-  const [pinnedRuns, setPinnedRuns] = useState<string[]>(() => getPinnedRuns());
+  const [pinnedRuns, setPinnedRuns] = useState<string[]>([]);
+
+  useEffect(() => {
+    setPinnedRuns(getPinnedRuns());
+  }, []);
   const [pinFeedback, setPinFeedback] = useState<string>();
   const [phase, setPhase] = useState<Phase>(
     suggestions.length > 0 ? "select" : "custom",
@@ -54,7 +59,7 @@ export function CommandArgs({
 
   useEffect(() => {
     if (!pinFeedback) return;
-    const timeout = setTimeout(() => setPinFeedback(undefined), 1400);
+    const timeout = setTimeout(() => setPinFeedback(undefined), ms("1.4s"));
     return () => clearTimeout(timeout);
   }, [pinFeedback]);
 

@@ -6,7 +6,7 @@ import {
 } from "../lib/runner.js";
 import { resolveToolCommand } from "../lib/toolResolver.js";
 import { registerForegroundProcess, generateProcessId } from "../lib/processManager.js";
-import type { CliToolId } from "../data/types.js";
+import { CLI_TOOL_IDS, type CliToolId } from "../data/types.js";
 
 export type CommandStatus = "idle" | "running" | "success" | "error";
 
@@ -19,6 +19,9 @@ export function useCommand(
   const [result, setResult] = useState<RunResult | null>(null);
   const [partialStdout, setPartialStdout] = useState("");
   const [partialStderr, setPartialStderr] = useState("");
+  const [pid, setPid] = useState<number | undefined>();
+  const [processId, setProcessId] = useState<string | undefined>();
+  const [startedAt, setStartedAt] = useState<Date | undefined>();
   const abortRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
@@ -33,12 +36,14 @@ export function useCommand(
     setResult(null);
     setPartialStdout("");
     setPartialStderr("");
+    setPid(undefined);
+    setProcessId(undefined);
+    setStartedAt(new Date());
 
     let resolvedExecution: string | CommandExecution;
 
     if (typeof execution === "string") {
-      const toolIds: string[] = ["supabase", "gh", "vercel", "git", "pkg"];
-      if (toolIds.includes(execution)) {
+      if ((CLI_TOOL_IDS as readonly string[]).includes(execution)) {
         const resolved = resolveToolCommand(execution as CliToolId, cwd);
         resolvedExecution = { command: resolved.command, env: resolved.env };
       } else {
@@ -57,10 +62,12 @@ export function useCommand(
     abortRef.current = handle.abort;
 
     const cmdStr = typeof resolvedExecution === "string" ? resolvedExecution : resolvedExecution.command;
-    const processId = generateProcessId(cmdStr, args);
+    const procId = generateProcessId(cmdStr, args);
     try {
-      registerForegroundProcess(processId, cmdStr, args, cwd, handle.child);
+      registerForegroundProcess(procId, cmdStr, args, cwd, handle.subprocess);
     } catch { /* don't break TUI flow */ }
+    setPid(handle.pid);
+    setProcessId(procId);
     const res = await handle.promise;
     abortRef.current = null;
     setResult(res);
@@ -84,7 +91,10 @@ export function useCommand(
     setResult(null);
     setPartialStdout("");
     setPartialStderr("");
+    setPid(undefined);
+    setProcessId(undefined);
+    setStartedAt(undefined);
   }, []);
 
-  return { status, result, run, reset, abort, partialStdout, partialStderr };
+  return { status, result, run, reset, abort, partialStdout, partialStderr, pid, processId, startedAt };
 }

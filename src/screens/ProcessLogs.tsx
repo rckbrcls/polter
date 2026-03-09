@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Box, Text, useInput } from "ink";
 import { spawn } from "node:child_process";
+import ms from "ms";
 import { inkColors } from "../theme.js";
-import { getProcessOutput, listProcesses, stopProcess, type ProcessInfo } from "../lib/processManager.js";
+import { getProcessOutput, listProcesses, stopProcess, startProcess, generateProcessId, type ProcessInfo } from "../lib/processManager.js";
 import { ScrollableBox } from "../components/ScrollableBox.js";
 
 interface ProcessLogsProps {
@@ -17,11 +18,23 @@ interface ProcessLogsProps {
 type StreamFilter = "both" | "stdout" | "stderr";
 
 function copyToClipboard(text: string): void {
-  const cmd = process.platform === "darwin" ? "pbcopy" : "xclip";
-  const args = process.platform === "darwin" ? [] : ["-selection", "clipboard"];
-  const proc = spawn(cmd, args, { stdio: ["pipe", "ignore", "ignore"] });
-  proc.stdin?.write(text);
-  proc.stdin?.end();
+  let cmd: string;
+  let args: string[];
+  if (process.platform === "darwin") {
+    cmd = "pbcopy";
+    args = [];
+  } else if (process.platform === "win32") {
+    cmd = "clip";
+    args = [];
+  } else {
+    cmd = "xclip";
+    args = ["-selection", "clipboard"];
+  }
+  try {
+    const proc = spawn(cmd, args, { stdio: ["pipe", "ignore", "ignore"] });
+    proc.stdin?.write(text);
+    proc.stdin?.end();
+  } catch { /* clipboard tool not available */ }
 }
 
 export function ProcessLogs({
@@ -59,13 +72,13 @@ export function ProcessLogs({
     };
 
     refresh();
-    const interval = setInterval(refresh, 1000);
+    const interval = setInterval(refresh, ms("1s"));
     return () => clearInterval(interval);
   }, [processId, stream]);
 
   useEffect(() => {
     if (feedback) {
-      const timer = setTimeout(() => setFeedback(undefined), 2000);
+      const timer = setTimeout(() => setFeedback(undefined), ms("2s"));
       return () => clearTimeout(timer);
     }
   }, [feedback]);
@@ -112,6 +125,15 @@ export function ProcessLogs({
 
     if (input === "c") {
       handleCopy();
+      return;
+    }
+
+    if (input === "r") {
+      if (proc) {
+        const newId = generateProcessId(proc.command, proc.args);
+        startProcess(newId, proc.command, proc.args, proc.cwd);
+        setFeedback(`Re-started: ${newId}`);
+      }
       return;
     }
   });
@@ -163,6 +185,7 @@ export function ProcessLogs({
         <Text dimColor>stream:[<Text bold color={inkColors.accent}>{stream}</Text>]</Text>
         <Text dimColor>↑↓:scroll</Text>
         <Text dimColor>s:toggle</Text>
+        <Text dimColor>r:rerun</Text>
         <Text dimColor>x:stop</Text>
         <Text dimColor>c:copy</Text>
         <Text dimColor>Esc:back</Text>

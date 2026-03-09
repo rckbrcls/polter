@@ -1,4 +1,5 @@
 import { createRequire } from "node:module";
+import figures from "figures";
 import pc from "picocolors";
 
 const require = createRequire(import.meta.url);
@@ -41,19 +42,19 @@ export const colors = {
 };
 
 export const symbols = {
-  pointer: "›",
-  pointerActive: "❯",
-  check: "✓",
-  cross: "✗",
-  bullet: "●",
-  bulletEmpty: "○",
+  pointer: figures.pointer,
+  pointerActive: figures.pointer,
+  check: figures.tick,
+  cross: figures.cross,
+  bullet: figures.bullet,
+  bulletEmpty: figures.circle,
   pin: "📌",
   ghost: "👻",
   exit: "🚪",
   edit: "✏️",
   gear: "⚙️",
-  back: "←",
-  arrowRight: "→",
+  back: figures.arrowLeft,
+  arrowRight: figures.arrowRight,
   separator: "─",
   cornerTL: "╭",
   cornerTR: "╮",
@@ -61,7 +62,7 @@ export const symbols = {
   cornerBR: "╯",
   vertical: "│",
   horizontal: "─",
-} as const;
+};
 
 export const panel = {
   borderFocused: SUPABASE_HEX,

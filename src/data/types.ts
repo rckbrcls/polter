@@ -1,4 +1,5 @@
-export type CliToolId = "supabase" | "gh" | "vercel" | "git" | "pkg";
+export const CLI_TOOL_IDS = ["supabase", "gh", "vercel", "git", "pkg"] as const;
+export type CliToolId = (typeof CLI_TOOL_IDS)[number];
 
 export interface CommandDef {
   id: string;
@@ -53,6 +54,7 @@ export interface ProjectConfig {
     pkg?: { manager?: import("../lib/pkgManager.js").PkgManagerId };
   };
   env?: Record<string, string>;
+  childRepos?: string[];
   pipelines: Pipeline[];
 }
 

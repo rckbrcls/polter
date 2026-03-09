@@ -21,7 +21,6 @@ Polter is a productivity layer on top of the official `supabase` CLI. Instead of
 - **Built-in Self-Update**: Update Polter for the current repository or globally through npm
 - **Shell Execution**: Resolves `supabase` from the current repository first, then falls back to `PATH`
 - **TypeScript-based CLI**: Strongly typed internal implementation
-- **App Workflows**: Explicit `polter app ...` flows for repository-aware setup, linking, migrations, runtime configuration, and app installation
 
 ---
 
@@ -102,45 +101,6 @@ Install Supabase CLI (official docs):
 ---
 
 ## Quick Reference
-
-### App Workflows
-
-Polter keeps generic Supabase execution separate from app-specific automation.
-Use the `app` namespace when you want project-aware workflows:
-
-```bash
-polter app setup ops --path .
-```
-
-```bash
-polter app link ops --path .
-```
-
-```bash
-polter app migrate ops push --path .
-```
-
-```bash
-polter app configure ops --path .
-```
-
-```bash
-polter app install ops
-```
-
-```bash
-polter app update ops
-```
-
-`setup ops` installs dependencies, collects Supabase connection data, links the project, pushes migrations, and writes the runtime bootstrap payload used by the desktop app.
-
-`configure ops` refreshes the runtime connection payload without reinstalling the app.
-
-`install ops` is currently macOS-only. By default it resolves the latest GitHub release from `polterware/ops`, accepts `--version <version>` to pin a release, and still supports `--artifact-url` or `POLTER_OPS_MACOS_ARTIFACT_URL` as manual overrides.
-
-`update ops` is also macOS-only. It replaces the installed `ops.app` with a newer release while preserving the persisted runtime configuration, local settings, and Supabase session state stored outside the app bundle.
-
-Use `POLTER_OPS_GITHUB_REPO=owner/repo` when you need to resolve releases from a fork or a different repository.
 
 ### Execution Model
 
@@ -259,36 +219,6 @@ Pins are persisted locally using OS-level app config storage.
 ---
 
 ## Usage Examples
-
-### Bootstrap Ops from source
-
-```bash
-polter app setup ops --path /absolute/path/to/ops
-```
-
-### Reconfigure an installed Ops app
-
-```bash
-polter app configure ops
-```
-
-### Install the latest released Ops app
-
-```bash
-polter app install ops
-```
-
-Install a specific release:
-
-```bash
-polter app install ops --version 1.0.0
-```
-
-Update an existing installation without re-running runtime configuration:
-
-```bash
-polter app update ops
-```
 
 ### Check Supabase CLI version
 

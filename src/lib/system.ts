@@ -1,8 +1,9 @@
 import { execSync } from "node:child_process";
+import which from "which";
 
 export function commandExists(command: string): boolean {
   try {
-    execSync(`command -v ${command}`, { stdio: "ignore" });
+    which.sync(command);
     return true;
   } catch {
     return false;

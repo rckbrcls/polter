@@ -1,6 +1,6 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "../lib/fs.js";
 import { join } from "node:path";
-import type { PolterYaml } from "./schema.js";
+import { PolterYamlSchema, type PolterYaml } from "./schema.js";
 
 const YAML_FILE = "polter.yaml";
 
@@ -119,5 +119,6 @@ export function parsePolterYaml(
   const content = readFileSync(filePath, "utf-8");
   const raw = parseSimpleYaml(content);
 
-  return raw as unknown as PolterYaml;
+  const result = PolterYamlSchema.safeParse(raw);
+  return result.success ? result.data : undefined;
 }
