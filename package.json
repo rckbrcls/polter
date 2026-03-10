@@ -1,17 +1,12 @@
 {
   "name": "@polterware/polter",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "Infrastructure orchestrator CLI for managing dev processes, pipelines, CLI commands, and packages.",
   "type": "module",
   "bin": {
     "polter": "./dist/index.js",
     "polter-mcp": "./dist/mcp.js"
   },
-  "files": [
-    "dist",
-    "README.md",
-    "LICENSE"
-  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/polterware/polter.git"
@@ -20,15 +15,16 @@
     "url": "https://github.com/polterware/polter/issues"
   },
   "homepage": "https://github.com/polterware/polter#readme",
-  "publishConfig": {
-    "access": "public"
-  },
   "scripts": {
     "dev": "tsup src/index.tsx src/api.ts src/mcp.ts --watch --format esm --dts",
     "build": "tsup src/index.tsx src/api.ts src/mcp.ts --format esm --clean",
     "lint": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "build:bin": "bun run build:bin:polter && bun run build:bin:mcp",
+    "build:bin:polter": "bun build --compile src/index.tsx --outfile dist/bin/polter",
+    "build:bin:mcp": "bun build --compile src/mcp.ts --outfile dist/bin/polter-mcp",
+    "build:all": "bun run build && bun run build:bin"
   },
   "keywords": [
     "polterware",
@@ -46,7 +42,7 @@
   "author": "Polterware",
   "license": "MIT",
   "engines": {
-    "node": ">=18"
+    "bun": ">=1.0"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
@@ -78,6 +74,7 @@
     "@types/react": "^19.0.0",
     "@types/semver": "^7.7.1",
     "@types/which": "^3.0.4",
+    "react-devtools-core": "^7.0.1",
     "tsup": "^8.3.6",
     "typescript": "^5.8.2",
     "vitest": "^3.0.7"

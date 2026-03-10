@@ -5,12 +5,12 @@ Multi-tool CLI orchestrator for Supabase, GitHub CLI, Vercel, Git, and package m
 ## Commands
 
 ```bash
-npm run dev          # Watch mode (tsup)
-npm run build        # Production build (tsup, outputs to dist/)
-npm run lint         # Type-check only (tsc --noEmit)
-npm run test         # Run all tests (vitest run)
-npm run test:watch   # Watch mode tests
-npx vitest run src/lib/runner.test.ts  # Run a single test file
+bun run dev          # Watch mode (tsup)
+bun run build        # Production build (tsup, outputs to dist/)
+bun run lint         # Type-check only (tsc --noEmit)
+bun run test         # Run all tests (vitest run)
+bun run test:watch   # Watch mode tests
+bun vitest run src/lib/runner.test.ts  # Run a single test file
 ```
 
 ## Architecture

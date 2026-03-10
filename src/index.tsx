@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 import { parseCliArgs, printCliHelp } from "./lib/cliArgs.js";
 import pc from "picocolors";
 

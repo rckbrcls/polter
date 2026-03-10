@@ -3,6 +3,7 @@ node_modules/
 
 # Build output
 dist/
+dist/bin/
 build/
 coverage/
 *.tsbuildinfo
@@ -19,6 +20,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+package-lock.json
 
 # Polter runtime state
 .polter/

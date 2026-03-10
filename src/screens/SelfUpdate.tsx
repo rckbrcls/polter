@@ -7,7 +7,6 @@ import { Spinner } from "../components/Spinner.js";
 import { StatusBar } from "../components/StatusBar.js";
 import { CommandOutput } from "../components/CommandOutput.js";
 import { useCommand } from "../hooks/useCommand.js";
-import { findNearestPackageRoot } from "../lib/packageRoot.js";
 import { inkColors } from "../theme.js";
 
 interface SelfUpdateProps {
@@ -19,16 +18,11 @@ interface SelfUpdateProps {
   isInputActive?: boolean;
 }
 
-type Phase = "target" | "confirm" | "running" | "success" | "error";
-type UpdateTarget = "repository" | "global";
+type Phase = "confirm" | "running" | "success" | "error";
 
-const packageName = "@polterware/polter";
-const globalUpdateArgs = ["install", "-g", `${packageName}@latest`];
-const repositoryUpdateArgs = ["install", "-D", `${packageName}@latest`];
-
-function getUpdateArgs(target: UpdateTarget): string[] {
-  return target === "repository" ? repositoryUpdateArgs : globalUpdateArgs;
-}
+const INSTALL_URL = "https://raw.githubusercontent.com/polterware/polter/main/install.sh";
+const updateArgs = ["-fsSL", INSTALL_URL];
+const updateDisplay = `curl -fsSL ${INSTALL_URL} | bash`;
 
 export function SelfUpdate({
   onBack,
@@ -38,26 +32,16 @@ export function SelfUpdate({
   panelMode = false,
   isInputActive = true,
 }: SelfUpdateProps): React.ReactElement {
-  const repositoryRoot = findNearestPackageRoot();
-  const [target, setTarget] = useState<UpdateTarget>(
-    repositoryRoot ? "repository" : "global",
-  );
-  const [phase, setPhase] = useState<Phase>(
-    repositoryRoot ? "target" : "confirm",
-  );
-  const updateArgs = getUpdateArgs(target);
-  const updateDisplay = `npm ${updateArgs.join(" ")}`;
-  const updateCwd =
-    target === "repository" && repositoryRoot ? repositoryRoot : process.cwd();
-  const { status, result, run, reset } = useCommand("npm", updateCwd, {
+  const [phase, setPhase] = useState<Phase>("confirm");
+  const { status, result, run, reset } = useCommand("bash", process.cwd(), {
     quiet: panelMode,
   });
 
   useEffect(() => {
     if (phase === "running" && status === "idle") {
-      run(updateArgs);
+      run(["-c", `curl ${updateArgs.join(" ")} | bash`]);
     }
-  }, [phase, run, status, updateArgs]);
+  }, [phase, run, status]);
 
   useEffect(() => {
     if (phase === "running" && status === "success") {
@@ -69,65 +53,11 @@ export function SelfUpdate({
     }
   }, [phase, status]);
 
-  if (phase === "target") {
-    const targetItems = [
-      { value: "__section__", label: "📦 Update Target", kind: "header" as const, selectable: false },
-      {
-        value: "repository",
-        label: "Current repository",
-        hint: "Pin the latest version in package.json",
-        kind: "action" as const,
-      },
-      {
-        value: "global",
-        label: "Global install",
-        hint: "Update the shared version available in PATH",
-        kind: "action" as const,
-      },
-      ...(!panelMode ? [{ value: "back", label: "← Back to menu" }] : []),
-    ];
-
-    return (
-      <Box flexDirection="column" paddingX={panelMode ? 1 : 0}>
-        <Box marginBottom={1}>
-          <Text bold>Choose where to update Polter.</Text>
-        </Box>
-
-        <SelectList
-          items={targetItems}
-          onSelect={(value) => {
-            if (value === "back") {
-              onBack();
-              return;
-            }
-
-            setTarget(value as UpdateTarget);
-            reset();
-            setPhase("confirm");
-          }}
-          onCancel={onBack}
-          boxedSections={panelMode}
-          width={panelMode ? Math.max(20, width - 4) : width}
-          maxVisible={panelMode ? Math.max(6, height - 6) : undefined}
-          isInputActive={isInputActive}
-          arrowNavigation={panelMode}
-          panelFocused={isInputActive}
-        />
-
-        {repositoryRoot && (
-          <Box marginTop={1} marginLeft={2}>
-            <Text dimColor>Repository root: {repositoryRoot}</Text>
-          </Box>
-        )}
-      </Box>
-    );
-  }
-
   if (phase === "confirm") {
     return (
       <Box flexDirection="column" paddingX={panelMode ? 1 : 0}>
         <ConfirmPrompt
-          message={`Run ${updateDisplay}?`}
+          message="Download and install the latest Polter binary?"
           defaultValue={true}
           onConfirm={(confirmed) => {
             if (confirmed) {
@@ -135,33 +65,16 @@ export function SelfUpdate({
               setPhase("running");
               return;
             }
-
-            if (repositoryRoot) {
-              setPhase("target");
-              return;
-            }
-
             onBack();
           }}
-          onCancel={() => {
-            if (repositoryRoot) {
-              setPhase("target");
-            } else {
-              onBack();
-            }
-          }}
+          onCancel={onBack}
           isInputActive={isInputActive}
           arrowNavigation={panelMode}
         />
         <Box marginTop={1} marginLeft={2} flexDirection="column">
           <Text dimColor>
-            {target === "repository"
-              ? "This updates the dependency in the current repository."
-              : "This updates the global npm install."}
+            This re-runs the install script to update polter and polter-mcp in ~/.polter/bin/.
           </Text>
-          {target === "repository" && repositoryRoot && (
-            <Text dimColor>Run location: {repositoryRoot}</Text>
-          )}
         </Box>
       </Box>
     );
@@ -206,9 +119,6 @@ export function SelfUpdate({
         </Box>
         <Box marginBottom={1} marginLeft={2} flexDirection="column">
           <Text dimColor>Restart Polter to use the latest version.</Text>
-          {target === "repository" && repositoryRoot && (
-            <Text dimColor>Repository updated in: {repositoryRoot}</Text>
-          )}
         </Box>
 
         <CommandOutput
@@ -243,9 +153,6 @@ export function SelfUpdate({
   const errorItems = [
     { value: "__section__", label: "🔧 Recovery Options", kind: "header" as const, selectable: false },
     { value: "retry", label: "🔄 Retry update", kind: "action" as const },
-    ...(repositoryRoot
-      ? [{ value: "target", label: "↔ Choose update target", kind: "action" as const }]
-      : []),
     ...(!panelMode ? [{ value: "menu", label: "← Return to main menu", kind: "action" as const }] : []),
     { value: "exit", label: "🚪 Exit Polter", kind: "action" as const },
   ];
@@ -299,9 +206,6 @@ export function SelfUpdate({
       <Box marginBottom={1} marginLeft={2} flexDirection="column">
         <Text dimColor>Manual fallback:</Text>
         <Text color={inkColors.accent}>{updateDisplay}</Text>
-        {target === "repository" && repositoryRoot && (
-          <Text dimColor>Run location: {repositoryRoot}</Text>
-        )}
       </Box>
 
       {!panelMode && (
@@ -317,10 +221,6 @@ export function SelfUpdate({
             case "retry":
               reset();
               setPhase("running");
-              break;
-            case "target":
-              reset();
-              setPhase("target");
               break;
             case "menu":
               onBack();

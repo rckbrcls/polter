@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { basename } from "node:path";
+import { basename, join } from "node:path";
 import { Box, Text, useInput } from "ink";
 import ms from "ms";
 import { inkColors, panel } from "../theme.js";
 import { readScripts, discoverChildRepos, type ChildRepo } from "../lib/childRepos.js";
 import { detectPkgManager, translateCommand } from "../lib/pkgManager.js";
+import { readFileSync } from "../lib/fs.js";
 import { startProcess, generateProcessId } from "../lib/processManager.js";
 import { readProjectConfig } from "../config/projectConfig.js";
 import type { Screen } from "../data/types.js";
@@ -96,7 +97,7 @@ export function ScriptPicker({
 
   const projectName = useMemo(() => {
     try {
-      const raw = JSON.parse(require("node:fs").readFileSync(require("node:path").join(cwd, "package.json"), "utf-8"));
+      const raw = JSON.parse(readFileSync(join(cwd, "package.json"), "utf-8"));
       return raw.name || basename(cwd);
     } catch {
       return basename(cwd);

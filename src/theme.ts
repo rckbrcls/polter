@@ -1,9 +1,6 @@
-import { createRequire } from "node:module";
 import figures from "figures";
 import pc from "picocolors";
-
-const require = createRequire(import.meta.url);
-const packageJson = require("../package.json") as { version: string };
+import packageJson from "../package.json" with { type: "json" };
 const SUPABASE_HEX = "#3ECF8E";
 const SUPABASE_FG = "\u001b[38;2;62;207;142m";
 const SUPABASE_BG = "\u001b[48;2;62;207;142m";

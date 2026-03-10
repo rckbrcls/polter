@@ -1,27 +1,14 @@
 import { spawnSync } from "node:child_process";
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "./fs.js";
-import { join, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { homedir } from "node:os";
 import pc from "picocolors";
 import { commandExists } from "./system.js";
 import type { McpScope } from "./cliArgs.js";
+import packageJson from "../../package.json" with { type: "json" };
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-
-function readPkgVersion(): string {
-  // Works from both src/lib/ (dev) and dist/ (bundled)
-  for (const rel of ["../../package.json", "../package.json"]) {
-    const p = join(__dirname, rel);
-    if (existsSync(p)) {
-      const pkg = JSON.parse(readFileSync(p, "utf-8")) as { version: string };
-      return pkg.version;
-    }
-  }
-  return "0.0.0";
-}
-
-const MCP_ARGS = ["npx", "-y", "-p", "@polterware/polter@latest", "polter-mcp"];
+const POLTER_MCP_BIN = join(homedir(), ".polter", "bin", "polter-mcp");
+const MCP_COMMAND = POLTER_MCP_BIN;
 
 const SCOPE_LABELS: Record<McpScope, string> = {
   local: "local (this machine)",
@@ -32,7 +19,7 @@ const SCOPE_LABELS: Record<McpScope, string> = {
 function tryClaudeCli(scope: McpScope): boolean {
   if (!commandExists("claude")) return false;
 
-  const result = spawnSync("claude", ["mcp", "add", "-s", scope, "polter", "--", ...MCP_ARGS], {
+  const result = spawnSync("claude", ["mcp", "add", "-s", scope, "polter", "--", MCP_COMMAND], {
     stdio: "inherit",
     shell: true,
   });
@@ -65,8 +52,7 @@ function tryManualInstall(scope: McpScope): boolean {
 
   const mcpServers = (settings.mcpServers ?? {}) as Record<string, unknown>;
   mcpServers.polter = {
-    command: "npx",
-    args: ["-y", "-p", "@polterware/polter@latest", "polter-mcp"],
+    command: MCP_COMMAND,
   };
   settings.mcpServers = mcpServers;
 
@@ -94,7 +80,7 @@ export async function installMcpServer(scope: McpScope): Promise<void> {
     process.stdout.write(pc.green("\n  Done! Restart Claude Code to use Polter tools.\n"));
   } else {
     process.stderr.write(pc.red("\n  Failed to install. Add manually:\n\n"));
-    process.stderr.write(`  ${pc.dim(JSON.stringify({ mcpServers: { polter: { command: "npx", args: ["-y", "-p", "@polterware/polter@latest", "polter-mcp"] } } }, null, 2))}\n`);
+    process.stderr.write(`  ${pc.dim(JSON.stringify({ mcpServers: { polter: { command: MCP_COMMAND } } }, null, 2))}\n`);
     process.exit(1);
   }
 }
@@ -157,7 +143,7 @@ export interface McpStatusInfo {
 }
 
 export function getMcpStatusInfo(): McpStatusInfo {
-  const version = readPkgVersion();
+  const version = packageJson.version;
 
   const scopeDefs: Array<{ label: string; path: string; scope: "project" | "user" }> = [
     { label: "Project (.mcp.json)", path: join(process.cwd(), ".mcp.json"), scope: "project" },
@@ -254,13 +240,12 @@ export async function mcpStatus(): Promise<void> {
   process.stdout.write(pc.bold("Polter MCP Server Status\n\n"));
 
   // Current installed version
-  const pkgVersion = readPkgVersion();
+  const pkgVersion = packageJson.version;
   process.stdout.write(`  Installed version: ${pc.cyan(pkgVersion)}\n`);
 
-  // Latest version from npm
-  const latestResult = spawnSync("npm", ["view", "@polterware/polter", "version"], {
+  // Latest version from GitHub
+  const latestResult = spawnSync("bash", ["-c", `curl -fsSL https://api.github.com/repos/polterware/polter/releases/latest 2>/dev/null | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"v\\([^"]*\\)".*/\\1/p' | head -1`], {
     encoding: "utf-8",
-    shell: true,
     timeout: 10_000,
   });
   const latest = latestResult.stdout?.trim();

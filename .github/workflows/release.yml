@@ -1,0 +1,52 @@
+name: Release Binaries
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - run: bun install --frozen-lockfile
+
+      - name: Cross-compile binaries
+        run: |
+          targets=(
+            "bun-darwin-arm64"
+            "bun-darwin-x64"
+            "bun-linux-arm64"
+            "bun-linux-x64"
+          )
+
+          for target in "${targets[@]}"; do
+            suffix="${target#bun-}"
+            echo "Building polter-${suffix}..."
+            bun build --compile --target="$target" src/index.tsx --outfile "dist/bin/polter-${suffix}"
+            echo "Building polter-mcp-${suffix}..."
+            bun build --compile --target="$target" src/mcp.ts --outfile "dist/bin/polter-mcp-${suffix}"
+          done
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            dist/bin/polter-darwin-arm64
+            dist/bin/polter-darwin-x64
+            dist/bin/polter-linux-arm64
+            dist/bin/polter-linux-x64
+            dist/bin/polter-mcp-darwin-arm64
+            dist/bin/polter-mcp-darwin-x64
+            dist/bin/polter-mcp-linux-arm64
+            dist/bin/polter-mcp-linux-x64

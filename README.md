@@ -2,9 +2,7 @@
 
 ![Polter running](docs/assets/polter-hero.png)
 
-[![npm version](https://img.shields.io/npm/v/%40polterware%2Fpolter.svg)](https://www.npmjs.com/package/@polterware/polter)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Node.js](https://img.shields.io/badge/Node.js-18%2B-green.svg)](https://nodejs.org/)
 
 An infrastructure orchestrator CLI for managing dev processes, pipelines, CLI commands (Supabase, GitHub, Vercel, Git), and packages from one unified interface.
 
@@ -20,72 +18,34 @@ Polter replaces the need to juggle multiple CLIs. Browse a tabbed command board,
 - **Pinned Commands and Runs**: Toggle base command pins with `→` and pin exact runs after success for one-click reuse
 - **Package Manager Detection**: Auto-detects npm/pnpm/yarn/bun from lockfiles and translates commands between managers
 - **MCP Server**: Expose Polter as an MCP server for AI tool integration (Claude Code, Cursor, etc.)
-- **Built-in Self-Update**: Update Polter for the current repository or globally through npm
+- **Built-in Self-Update**: Update Polter from inside the TUI or by re-running the install script
 - **TypeScript-based CLI**: Strongly typed internal implementation with React + Ink TUI
 
 ---
 
 ## Installation
 
-### Run one-off without installing
-
 ```bash
-npx @polterware/polter@latest
+curl -fsSL https://raw.githubusercontent.com/polterware/polter/main/install.sh | bash
 ```
 
-### Install in a repository
-
-```bash
-npm install -D @polterware/polter
-```
-
-Then run it from that repository with:
-
-```bash
-npx polter
-```
-
-### Install globally
-
-```bash
-npm install -g @polterware/polter
-```
-
-Then run:
-
-```bash
-polter
-```
-
-Use a repository install when you want the CLI version pinned to one project.
-Use a global install when you want the same CLI version across every repository.
+Downloads pre-built binaries (`polter` and `polter-mcp`) to `~/.polter/bin/`. Supports macOS (Apple Silicon + Intel) and Linux (arm64 + x64). No Node.js or other runtime required — Polter ships as a standalone binary powered by Bun.
 
 ### Update
 
-If you installed it globally, update it with:
+Re-run the install script to update to the latest version:
 
 ```bash
-npm install -g @polterware/polter@latest
+curl -fsSL https://raw.githubusercontent.com/polterware/polter/main/install.sh | bash
 ```
 
-If you installed it in a repository, update it there with:
-
-```bash
-npm install -D @polterware/polter@latest
-```
-
-You can also run the same update flow from inside Polter:
-
-1. Go to the `Actions` section
-2. Choose `Update Polter`
-3. Choose `Current repository` or `Global install`
-4. Confirm the npm update command
+You can also update from inside Polter via **Actions > Update Polter**.
 
 ---
 
 ## Requirements
 
-- **Node.js**: `>= 18`
+No runtime dependencies — Polter ships as a standalone binary.
 
 CLI tools are optional. Polter detects which ones are installed and shows their status on the Tool Status screen:
 
@@ -97,7 +57,6 @@ CLI tools are optional. Polter detects which ones are installed and shows their 
 Check your environment:
 
 ```bash
-node -v
 supabase --version
 gh --version
 vercel --version
@@ -115,15 +74,7 @@ Polter resolves the appropriate CLI tool and executes commands as:
 <tool> <command> <extra-args> <flags>
 ```
 
-where `<tool>` is one of `supabase`, `gh`, `vercel`, `git`, or your package manager. The self-update action is the only built-in exception and can run one of:
-
-```bash
-npm install -g @polterware/polter@latest
-```
-
-```bash
-npm install -D @polterware/polter@latest
-```
+where `<tool>` is one of `supabase`, `gh`, `vercel`, `git`, or your package manager.
 
 ### Typical Flow
 
