@@ -1,6 +1,6 @@
 {
   "name": "@polterware/polter",
-  "version": "0.6.2",
+  "version": "0.6.3",
   "description": "Infrastructure orchestrator CLI for managing dev processes, pipelines, CLI commands, and packages.",
   "type": "module",
   "bin": {
