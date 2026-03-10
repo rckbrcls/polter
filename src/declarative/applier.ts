@@ -14,20 +14,26 @@ export async function applyActions(
   actions: PlanAction[],
   cwd: string = process.cwd(),
   onProgress?: (completed: number, total: number, current: PlanAction) => void,
+  onOutput?: (actionIndex: number, stdout: string, stderr: string) => void,
 ): Promise<ApplyResult[]> {
   const limit = pLimit(3);
   let completed = 0;
 
   const results = await Promise.all(
-    actions.map((action) =>
+    actions.map((action, actionIndex) =>
       limit(async (): Promise<ApplyResult> => {
         onProgress?.(completed, actions.length, action);
+
+        const onData = onOutput
+          ? (stdout: string, stderr: string) => onOutput(actionIndex, stdout, stderr)
+          : undefined;
 
         const resolved = resolveToolCommand(action.tool, cwd);
         const result = await runCommand(
           { command: resolved.command, env: resolved.env },
           action.args,
           cwd,
+          { onData },
         ).promise;
 
         completed++;

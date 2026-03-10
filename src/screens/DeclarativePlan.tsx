@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Box, Text } from "ink";
 import { SelectList } from "../components/SelectList.js";
 import { StatusBar } from "../components/StatusBar.js";
+import { TerminalBox } from "../components/TerminalBox.js";
 import { inkColors } from "../theme.js";
 import { findPolterYaml, parsePolterYaml } from "../declarative/parser.js";
 import { planChanges } from "../declarative/planner.js";
@@ -35,6 +36,7 @@ export function DeclarativePlan({
   const [actions, setActions] = useState<PlanAction[]>([]);
   const [applyProgress, setApplyProgress] = useState("");
   const [applyResults, setApplyResults] = useState<ApplyResult[]>([]);
+  const [applyOutput, setApplyOutput] = useState<{ stdout: string; stderr: string }>({ stdout: "", stderr: "" });
   const { openEditor } = useEditor();
 
   const loadPlan = () => {
@@ -108,12 +110,26 @@ export function DeclarativePlan({
   }
 
   if (phase === "applying") {
+    // Header (1) + gap (1) + progress (1) + border (2) = 5
+    const applyLogHeight = Math.max(3, height - 5);
+    const cardWidth = Math.max(30, (panelMode ? width - 4 : width) - 2);
+
     return (
       <Box flexDirection="column" paddingX={panelMode ? 1 : 0}>
         <Box marginBottom={1}>
           <Text bold color={inkColors.accent}>Applying changes...</Text>
         </Box>
         <Text>{applyProgress}</Text>
+        <TerminalBox
+          stdout={applyOutput.stdout}
+          stderr={applyOutput.stderr}
+          height={applyLogHeight}
+          width={cardWidth}
+          isActive={isInputActive}
+          focused={true}
+          autoScrollToBottom
+          emptyMessage="Waiting for output..."
+        />
       </Box>
     );
   }
@@ -221,9 +237,17 @@ export function DeclarativePlan({
   const handleSelect = (value: string) => {
     if (value === "apply") {
       setPhase("applying");
-      applyActions(actions, process.cwd(), (completed, total, current) => {
-        setApplyProgress(`[${completed + 1}/${total}] ${current.description}...`);
-      }).then((results) => {
+      setApplyOutput({ stdout: "", stderr: "" });
+      applyActions(
+        actions,
+        process.cwd(),
+        (completed, total, current) => {
+          setApplyProgress(`[${completed + 1}/${total}] ${current.description}...`);
+        },
+        (_actionIndex, stdout, stderr) => {
+          setApplyOutput({ stdout, stderr });
+        },
+      ).then((results) => {
         setApplyResults(results);
         setPhase("results");
       });

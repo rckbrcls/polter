@@ -5,6 +5,8 @@ import { StepIndicator } from "../components/StepIndicator.js";
 import { PipelineProgressBar } from "../components/PipelineProgress.js";
 import { Divider } from "../components/Divider.js";
 import { StatusBar } from "../components/StatusBar.js";
+import { TerminalBox } from "../components/TerminalBox.js";
+import { useOutputFocus } from "../hooks/useOutputFocus.js";
 import { inkColors } from "../theme.js";
 import {
   executePipeline,
@@ -19,6 +21,7 @@ interface PipelineExecutionProps {
   onBack: () => void;
   onExit: () => void;
   width?: number;
+  height?: number;
   panelMode?: boolean;
   isInputActive?: boolean;
 }
@@ -30,6 +33,7 @@ export function PipelineExecution({
   onBack,
   onExit,
   width = 80,
+  height = 24,
   panelMode = false,
   isInputActive = true,
 }: PipelineExecutionProps): React.ReactElement {
@@ -41,19 +45,34 @@ export function PipelineExecution({
   const [phase, setPhase] = useState<Phase>("running");
   const [progress, setProgress] = useState<PipelineProgress | null>(null);
   const [results, setResults] = useState<StepResult[]>([]);
+  const [stepOutput, setStepOutput] = useState<Record<number, { stdout: string; stderr: string }>>({});
+  const { outputFocused } = useOutputFocus(isInputActive && phase === "done");
 
   useEffect(() => {
     if (!pipeline) return;
     let cancelled = false;
 
-    executePipeline(pipeline, (p) => {
-      if (cancelled) return;
-      setProgress({ ...p });
-      if (p.done) {
-        setResults(p.stepResults);
-        setPhase("done");
-      }
-    }).catch(() => {
+    executePipeline(
+      pipeline,
+      (p) => {
+        if (cancelled) return;
+        setProgress({ ...p });
+        if (p.done) {
+          setResults(p.stepResults);
+          setPhase("done");
+        }
+      },
+      process.cwd(),
+      {
+        onStepOutput: (stepIndex, stdout, stderr) => {
+          if (cancelled) return;
+          setStepOutput((prev) => ({
+            ...prev,
+            [stepIndex]: { stdout, stderr },
+          }));
+        },
+      },
+    ).catch(() => {
       if (!cancelled) setPhase("done");
     });
 
@@ -65,7 +84,7 @@ export function PipelineExecution({
       <Box flexDirection="column" paddingX={panelMode ? 1 : 0}>
         <Text color="red">Pipeline not found: {pipelineId}</Text>
         <SelectList
-          items={[{ value: "__back__", label: "← Back" }]}
+          items={[{ value: "__back__", label: "\u2190 Back" }]}
           onSelect={onBack}
           onCancel={onBack}
           boxedSections={panelMode}
@@ -83,6 +102,7 @@ export function PipelineExecution({
     (s) => s.status === "success" || s.status === "error" || s.status === "skipped",
   ).length;
   const errorCount = stepResults.filter((s) => s.status === "error").length;
+  const currentStepIndex = progress?.currentStepIndex ?? 0;
 
   function getStepLabel(step: { commandId: string; args: string[] }): string {
     const cmdDef = getCommandById(step.commandId);
@@ -90,11 +110,26 @@ export function PipelineExecution({
     return step.args.length > 0 ? `${base} ${step.args.join(" ")}` : base;
   }
 
+  // Calculate output box height: header (2) + progress bar (1) + divider (1) + steps + gap (1) + border (2) + select/status (~4) = ~11 + steps
+  const stepsCount = pipeline.steps.length;
+  const outputBoxHeight = Math.max(3, height - 11 - stepsCount);
+  const cardWidth = Math.max(30, (panelMode ? width - 4 : width) - 2);
+
+  // Determine what output to show
+  const currentOutput = stepOutput[currentStepIndex];
+  // In done phase, find the last failed step or the last step
+  const doneStepIndex = phase === "done"
+    ? (results.findIndex((r) => r.status === "error") !== -1
+      ? results.findIndex((r) => r.status === "error")
+      : results.length - 1)
+    : currentStepIndex;
+  const doneOutput = stepOutput[doneStepIndex];
+
   return (
     <Box flexDirection="column" paddingX={panelMode ? 1 : 0}>
       <Box marginBottom={1} gap={1}>
         <Text bold color={inkColors.accent}>
-          🔗 {pipeline.name}
+          {"\uD83D\uDD17"} {pipeline.name}
         </Text>
         <Text dimColor>
           {phase === "running" ? "Running..." : "Complete"}
@@ -121,8 +156,47 @@ export function PipelineExecution({
         ))}
       </Box>
 
+      {/* Output box for current/failed step */}
+      {phase === "running" && (
+        <TerminalBox
+          stdout={currentOutput?.stdout}
+          stderr={currentOutput?.stderr}
+          height={outputBoxHeight}
+          width={cardWidth}
+          isActive={isInputActive}
+          copyEnabled={isInputActive}
+          focused={true}
+          autoScrollToBottom
+          emptyMessage="Waiting for output..."
+          title={`Step ${currentStepIndex + 1} output`}
+          footerHints={[
+            { key: "\u2191\u2193", label: "scroll" },
+            { key: "c", label: "copy" },
+          ]}
+        />
+      )}
+
       {phase === "done" && (
         <>
+          {doneOutput && (
+            <TerminalBox
+              stdout={doneOutput.stdout}
+              stderr={doneOutput.stderr}
+              height={outputBoxHeight}
+              width={cardWidth}
+              isActive={isInputActive && outputFocused}
+              copyEnabled={isInputActive && outputFocused}
+              focused={outputFocused}
+              borderColor={errorCount > 0 ? "red" : undefined}
+              autoScrollToBottom
+              title={errorCount > 0 ? `Step ${doneStepIndex + 1} error output` : `Step ${doneStepIndex + 1} output`}
+              footerHints={[
+                { key: "/", label: outputFocused ? "menu" : "scroll" },
+                ...(outputFocused ? [{ key: "\u2191\u2193", label: "scroll" }, { key: "c", label: "copy" }] : []),
+              ]}
+            />
+          )}
+
           <Divider width={width} />
           <Box marginY={1}>
             <Text
@@ -136,8 +210,8 @@ export function PipelineExecution({
           </Box>
           <SelectList
             items={[
-              { value: "__back__", label: "← Back" },
-              { value: "__exit__", label: "🚪 Exit" },
+              { value: "__back__", label: "\u2190 Back" },
+              { value: "__exit__", label: "\uD83D\uDEAA Exit" },
             ]}
             onSelect={(value) => {
               if (value === "__exit__") {
@@ -149,16 +223,16 @@ export function PipelineExecution({
             onCancel={onBack}
             boxedSections={panelMode}
             width={panelMode ? Math.max(20, width - 4) : width}
-            isInputActive={isInputActive}
+            isInputActive={isInputActive && !outputFocused}
             arrowNavigation={panelMode}
-            panelFocused={isInputActive}
+            panelFocused={isInputActive && !outputFocused}
           />
         </>
       )}
 
       {!panelMode && (
         <StatusBar
-          hint={phase === "running" ? "Running pipeline..." : "Enter select · Esc back"}
+          hint={phase === "running" ? "Running pipeline..." : "Enter select \u00B7 Esc back"}
           width={width}
         />
       )}

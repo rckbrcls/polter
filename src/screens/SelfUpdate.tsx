@@ -3,9 +3,8 @@ import { Box, Text } from "ink";
 import { ConfirmPrompt } from "../components/ConfirmPrompt.js";
 import { Divider } from "../components/Divider.js";
 import { SelectList } from "../components/SelectList.js";
-import { Spinner } from "../components/Spinner.js";
 import { StatusBar } from "../components/StatusBar.js";
-import { CommandOutput } from "../components/CommandOutput.js";
+import { TerminalBox } from "../components/TerminalBox.js";
 import { useCommand } from "../hooks/useCommand.js";
 import { inkColors } from "../theme.js";
 
@@ -33,7 +32,7 @@ export function SelfUpdate({
   isInputActive = true,
 }: SelfUpdateProps): React.ReactElement {
   const [phase, setPhase] = useState<Phase>("confirm");
-  const { status, result, run, reset } = useCommand("curl", process.cwd(), {
+  const { status, result, run, reset, partialStdout, partialStderr } = useCommand("curl", process.cwd(), {
     quiet: panelMode,
   });
 
@@ -81,37 +80,52 @@ export function SelfUpdate({
   }
 
   if (phase === "running") {
+    // Header (1) + divider (1) + command (1) + gap (1) + divider (1) + gap (1) + border (2) = 8
+    const logBoxHeight = Math.max(3, height - 8);
+    const cardWidth = Math.max(30, (panelMode ? width - 4 : width) - 2);
+
     return (
       <Box flexDirection="column" paddingX={panelMode ? 1 : 0}>
         <Divider width={panelMode ? width - 4 : width} />
         <Box marginY={1} gap={1}>
           <Text color={inkColors.accent} bold>
-            ▶
+            {"\u25B6"}
           </Text>
           <Text dimColor>Running:</Text>
           <Text>{updateDisplay}</Text>
         </Box>
         <Divider width={panelMode ? width - 4 : width} />
-        <Box marginTop={1}>
-          <Spinner label="Updating Polter..." />
-        </Box>
+        <TerminalBox
+          stdout={partialStdout}
+          stderr={partialStderr}
+          height={logBoxHeight}
+          width={cardWidth}
+          isActive={isInputActive}
+          focused={true}
+          autoScrollToBottom
+          emptyMessage="Updating Polter..."
+        />
       </Box>
     );
   }
 
   if (phase === "success") {
     const successItems = [
-      { value: "__section__", label: "✅ Update Complete", kind: "header" as const, selectable: false },
-      ...(!panelMode ? [{ value: "__back__", label: "← Back to menu", kind: "action" as const }] : []),
-      { value: "__exit__", label: "🚪 Exit Polter", kind: "action" as const },
+      { value: "__section__", label: "\u2705 Update Complete", kind: "header" as const, selectable: false },
+      ...(!panelMode ? [{ value: "__back__", label: "\u2190 Back to menu", kind: "action" as const }] : []),
+      { value: "__exit__", label: "\uD83D\uDEAA Exit Polter", kind: "action" as const },
     ];
+
+    // Header area (~6) + select (~3) + border (2) = ~11
+    const logBoxHeight = Math.max(3, height - 12);
+    const cardWidth = Math.max(30, (panelMode ? width - 4 : width) - 2);
 
     return (
       <Box flexDirection="column" paddingX={panelMode ? 1 : 0}>
         <Divider width={panelMode ? width - 4 : width} />
         <Box marginY={1} gap={1}>
           <Text color={inkColors.accent} bold>
-            ✓
+            {"\u2713"}
           </Text>
           <Text color={inkColors.accent} bold>
             Update completed successfully!
@@ -121,11 +135,13 @@ export function SelfUpdate({
           <Text dimColor>Restart Polter to use the latest version.</Text>
         </Box>
 
-        <CommandOutput
+        <TerminalBox
           stdout={result?.stdout}
           stderr={result?.stderr}
-          height={Math.max(3, height - 12)}
+          height={logBoxHeight}
+          width={cardWidth}
           isActive={isInputActive}
+          focused={true}
         />
 
         <SelectList
@@ -151,11 +167,15 @@ export function SelfUpdate({
   }
 
   const errorItems = [
-    { value: "__section__", label: "🔧 Recovery Options", kind: "header" as const, selectable: false },
-    { value: "retry", label: "🔄 Retry update", kind: "action" as const },
-    ...(!panelMode ? [{ value: "menu", label: "← Return to main menu", kind: "action" as const }] : []),
-    { value: "exit", label: "🚪 Exit Polter", kind: "action" as const },
+    { value: "__section__", label: "\uD83D\uDD27 Recovery Options", kind: "header" as const, selectable: false },
+    { value: "retry", label: "\uD83D\uDD04 Retry update", kind: "action" as const },
+    ...(!panelMode ? [{ value: "menu", label: "\u2190 Return to main menu", kind: "action" as const }] : []),
+    { value: "exit", label: "\uD83D\uDEAA Exit Polter", kind: "action" as const },
   ];
+
+  // Header area (~10) + select (~4) + manual fallback (~3) + border (2) = ~19
+  const errorLogHeight = Math.max(3, height - 16);
+  const errorCardWidth = Math.max(30, (panelMode ? width - 4 : width) - 2);
 
   return (
     <Box flexDirection="column" paddingX={panelMode ? 1 : 0}>
@@ -165,7 +185,7 @@ export function SelfUpdate({
         <Box flexDirection="column" marginY={1}>
           <Box gap={1}>
             <Text color="red" bold>
-              ✗
+              {"\u2717"}
             </Text>
             <Text color="red" bold>
               Failed to start update
@@ -180,7 +200,7 @@ export function SelfUpdate({
         <Box flexDirection="column" marginY={1}>
           <Box gap={1}>
             <Text color="red" bold>
-              ✗
+              {"\u2717"}
             </Text>
             <Text color="red">Update failed </Text>
             <Text dimColor>(exit code </Text>
@@ -196,11 +216,13 @@ export function SelfUpdate({
         </Box>
       )}
 
-      <CommandOutput
+      <TerminalBox
         stdout={result?.stdout}
         stderr={result?.stderr}
-        height={Math.max(3, height - 16)}
-        isActive={false}
+        height={errorLogHeight}
+        width={errorCardWidth}
+        isActive={isInputActive}
+        focused={true}
       />
 
       <Box marginBottom={1} marginLeft={2} flexDirection="column">

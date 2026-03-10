@@ -21,10 +21,15 @@ export interface PipelineProgress {
 
 export type ProgressCallback = (progress: PipelineProgress) => void;
 
+export interface PipelineExecutionOptions {
+  onStepOutput?: (stepIndex: number, stdout: string, stderr: string) => void;
+}
+
 export async function executePipeline(
   pipeline: Pipeline,
   onProgress: ProgressCallback,
   cwd: string = process.cwd(),
+  options?: PipelineExecutionOptions,
 ): Promise<StepResult[]> {
   const stepResults: StepResult[] = pipeline.steps.map((step) => ({
     step,
@@ -58,10 +63,15 @@ export async function executePipeline(
     }
     const allArgs = [...baseArgs, ...step.args, ...step.flags];
 
+    const onData = options?.onStepOutput
+      ? (stdout: string, stderr: string) => options.onStepOutput!(i, stdout, stderr)
+      : undefined;
+
     const result = await runCommand(
       { command: resolved.command, env: resolved.env },
       allArgs,
       cwd,
+      { onData },
     ).promise;
 
     const success = !result.spawnError && result.exitCode === 0;

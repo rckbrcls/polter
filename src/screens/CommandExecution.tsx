@@ -6,14 +6,14 @@ import { ConfirmPrompt } from "../components/ConfirmPrompt.js";
 import { ToolBadge } from "../components/ToolBadge.js";
 import { Divider } from "../components/Divider.js";
 import { StatusBar } from "../components/StatusBar.js";
-import { ScrollableBox } from "../components/ScrollableBox.js";
+import { TerminalBox } from "../components/TerminalBox.js";
 import { useCommand } from "../hooks/useCommand.js";
 import { useInteractiveRun } from "../hooks/useInteractiveRun.js";
+import { useOutputFocus } from "../hooks/useOutputFocus.js";
 import { isPinnedRun, togglePinnedRun } from "../data/pins.js";
 
 import { copyToClipboard } from "../lib/clipboard.js";
 import { parseErrorSuggestions } from "../lib/errorSuggestions.js";
-import { stripAnsi } from "../lib/ansi.js";
 import { inkColors, panel } from "../theme.js";
 import { getToolDisplayName, resolveToolCommand } from "../lib/toolResolver.js";
 import { startProcess, generateProcessId } from "../lib/processManager.js";
@@ -92,7 +92,9 @@ export function CommandExecution({
   });
   const { runInteractive } = useInteractiveRun();
 
-  const [outputFocused, setOutputFocused] = useState(false);
+  const { outputFocused, setOutputFocused } = useOutputFocus(
+    isInputActive && (phase === "error-menu" || phase === "success"),
+  );
   const [copyMessage, setCopyMessage] = useState<string>();
   const [feedback, setFeedback] = useState<string>();
   const [aborting, setAborting] = useState(false);
@@ -115,22 +117,8 @@ export function CommandExecution({
         setFeedback("Aborting...");
         return;
       }
-      if (input === "c") {
-        const output = [partialStdout, partialStderr].filter(Boolean).join("\n");
-        copyToClipboard(output).then(() => setFeedback("Copied to clipboard"));
-        return;
-      }
     },
     { isActive: isInputActive && phase === "running" },
-  );
-
-  useInput(
-    (input, _key) => {
-      if (input === "/") {
-        setOutputFocused((prev) => !prev);
-      }
-    },
-    { isActive: isInputActive && (phase === "error-menu" || phase === "success") },
   );
 
   useEffect(() => {
@@ -178,25 +166,25 @@ export function CommandExecution({
   if (phase === "confirm") {
     const pinned = isPinnedRun(runCommand);
     const confirmItems: SelectItem[] = [
-      { value: "execute", label: "▶ Execute command" },
+      { value: "execute", label: "\u25B6 Execute command" },
       {
         value: "pin",
-        label: pinned ? "📌 Unpin command" : "📌 Pin command",
+        label: pinned ? "\uD83D\uDCCC Unpin command" : "\uD83D\uDCCC Pin command",
         hint: "Save to quick access",
       },
       {
         value: "background",
-        label: "⏩ Run in background",
+        label: "\u23E9 Run in background",
         hint: "Start as background process",
       },
-      { value: "cancel", label: "← Cancel" },
+      { value: "cancel", label: "\u2190 Cancel" },
     ];
 
     const confirmContent = (
       <Box flexDirection="column">
         <Box marginBottom={1} gap={1}>
           <Text color={inkColors.accent} bold>
-            {"▶"} {cmdDisplay}
+            {"\u25B6"} {cmdDisplay}
           </Text>
           <ToolBadge tool={tool} />
         </Box>
@@ -219,8 +207,8 @@ export function CommandExecution({
                 togglePinnedRun(runCommand);
                 setPinMessage(
                   isPinnedRun(runCommand)
-                    ? "✓ Command pinned"
-                    : "✓ Command unpinned",
+                    ? "\u2713 Command pinned"
+                    : "\u2713 Command unpinned",
                 );
                 break;
               case "background": {
@@ -273,7 +261,7 @@ export function CommandExecution({
     return (
       <Box flexDirection="column" paddingX={panelMode ? 1 : 0}>
         <Box marginY={1} gap={1}>
-          <Text color="#3ECF8E" bold>✓</Text>
+          <Text color="#3ECF8E" bold>{"\u2713"}</Text>
           <Text color="#3ECF8E" bold>Started in background</Text>
         </Box>
         <Box>
@@ -285,10 +273,6 @@ export function CommandExecution({
   }
 
   if (phase === "running") {
-    const outputText = [partialStdout, partialStderr].filter(Boolean).join("\n");
-    const outputLines = outputText
-      ? stripAnsi(outputText).split("\n")
-      : [];
     // Header (1) + gap (1) + process info (1) + gap (1) + border (2) + feedback (1) + footer gap (1) + footer (1) = 9
     const logBoxHeight = Math.max(3, height - 9);
     const cardWidth = Math.max(30, (panelMode ? width - 4 : width) - 2);
@@ -297,9 +281,9 @@ export function CommandExecution({
       <Box flexDirection="column" paddingX={panelMode ? 1 : 0}>
         {/* Header */}
         <Box marginBottom={1} gap={1}>
-          <Text color={inkColors.accent} bold>{"▶"} {cmdDisplay}</Text>
+          <Text color={inkColors.accent} bold>{"\u25B6"} {cmdDisplay}</Text>
           <ToolBadge tool={tool} />
-          <Text color={aborting ? "yellow" : "green"}>● {aborting ? "aborting" : "running"}</Text>
+          <Text color={aborting ? "yellow" : "green"}>{"\u25CF"} {aborting ? "aborting" : "running"}</Text>
         </Box>
 
         {/* Process info */}
@@ -311,26 +295,27 @@ export function CommandExecution({
         </Box>
 
         {/* Output box */}
-        <Box
-          flexDirection="column"
-          borderStyle="round"
-          borderColor={inkColors.accent}
-          paddingX={1}
+        <TerminalBox
+          stdout={partialStdout}
+          stderr={partialStderr}
+          height={logBoxHeight}
           width={cardWidth}
-        >
-          <ScrollableBox
-            height={logBoxHeight}
-            isActive={isInputActive}
-            autoScrollToBottom
-          >
-            {outputLines.length === 0
-              ? [<Text key="empty" dimColor>Waiting for output...</Text>]
-              : outputLines.map((line, i) => (
-                  <Text key={i} wrap="truncate">{line}</Text>
-                ))
-            }
-          </ScrollableBox>
-        </Box>
+          isActive={isInputActive}
+          focused={true}
+          autoScrollToBottom
+          emptyMessage="Waiting for output..."
+          copyEnabled={isInputActive}
+          onCopy={() => {
+            const output = [partialStdout, partialStderr].filter(Boolean).join("\n");
+            void copyToClipboard(output).then(() => setFeedback("Copied to clipboard"));
+          }}
+          footerHints={[
+            { key: "\u2191\u2193", label: "scroll" },
+            { key: "x", label: "abort" },
+            { key: "c", label: "copy" },
+            { key: "Esc", label: "back" },
+          ]}
+        />
 
         {/* Feedback */}
         {feedback && (
@@ -338,14 +323,6 @@ export function CommandExecution({
             <Text color={inkColors.accent}>{feedback}</Text>
           </Box>
         )}
-
-        {/* Footer */}
-        <Box marginTop={1} gap={2}>
-          <Text dimColor>↑↓:scroll</Text>
-          <Text dimColor>x:abort</Text>
-          <Text dimColor>c:copy</Text>
-          <Text dimColor>Esc:back</Text>
-        </Box>
       </Box>
     );
   }
@@ -356,7 +333,7 @@ export function CommandExecution({
         <Divider width={panelMode ? width - 4 : width} />
         <Box marginY={1} gap={1}>
           <Text color={inkColors.accent} bold>
-            {"✓"}
+            {"\u2713"}
           </Text>
           <Text color={inkColors.accent} bold>
             Command completed successfully!
@@ -386,8 +363,6 @@ export function CommandExecution({
       { value: "__back__", label: "\u2190 Back to menu" },
     ];
 
-    const successOutput = [result?.stdout, result?.stderr].filter(Boolean).join("\n");
-    const successLines = successOutput ? stripAnsi(successOutput).split("\n") : [];
     // Header (1) + gap (1) + process info (1) + gap (1) + border (2) + pin msg (1?) + select (~3) + footer (1) = ~11
     const successLogHeight = Math.max(3, height - 11 - (pinMessage ? 1 : 0));
     const successCardWidth = Math.max(30, (panelMode ? width - 4 : width) - 2);
@@ -396,9 +371,9 @@ export function CommandExecution({
       <Box flexDirection="column" paddingX={panelMode ? 1 : 0}>
         {/* Header */}
         <Box marginBottom={1} gap={1}>
-          <Text color={inkColors.accent} bold>{"✓"} {cmdDisplay}</Text>
+          <Text color={inkColors.accent} bold>{"\u2713"} {cmdDisplay}</Text>
           <ToolBadge tool={tool} />
-          <Text color="green">● completed</Text>
+          <Text color="green">{"\u25CF"} completed</Text>
         </Box>
 
         {/* Process info */}
@@ -417,33 +392,21 @@ export function CommandExecution({
         )}
 
         {/* Output box */}
-        <Box
-          flexDirection="column"
-          borderStyle="round"
-          borderColor={outputFocused ? inkColors.accent : panel.borderDim}
-          paddingX={1}
+        <TerminalBox
+          stdout={result?.stdout}
+          stderr={result?.stderr}
+          height={successLogHeight}
           width={successCardWidth}
-        >
-          <ScrollableBox
-            height={successLogHeight}
-            isActive={isInputActive && outputFocused}
-            autoScrollToBottom
-          >
-            {successLines.length === 0
-              ? [<Text key="empty" dimColor>No output</Text>]
-              : successLines.map((line, i) => (
-                  <Text key={i} wrap="truncate">{line}</Text>
-                ))
-            }
-          </ScrollableBox>
-        </Box>
-
-        {/* Footer hints */}
-        <Box marginTop={1} gap={2}>
-          <Text dimColor>/:{outputFocused ? "menu" : "scroll"}</Text>
-          {outputFocused && <Text dimColor>↑↓:scroll</Text>}
-          <Text dimColor>Esc:back</Text>
-        </Box>
+          isActive={isInputActive && outputFocused}
+          focused={outputFocused}
+          autoScrollToBottom
+          emptyMessage="No output"
+          footerHints={[
+            { key: "/", label: outputFocused ? "menu" : "scroll" },
+            ...(outputFocused ? [{ key: "\u2191\u2193", label: "scroll" }, { key: "c", label: "copy" }] : []),
+            { key: "Esc", label: "back" },
+          ]}
+        />
 
         <SelectList
           items={successItems}
@@ -517,7 +480,7 @@ export function CommandExecution({
   });
   errorItems.push({
     value: "copy-output",
-    label: "📄 Copy output to clipboard",
+    label: "\uD83D\uDCC4 Copy output to clipboard",
   });
   errorItems.push({
     value: "__nav_header__",
@@ -529,8 +492,6 @@ export function CommandExecution({
     label: "\u2190 Back to menu",
   });
 
-  const errorOutput = [result?.stdout, result?.stderr].filter(Boolean).join("\n");
-  const errorLines = errorOutput ? stripAnsi(errorOutput).split("\n") : [];
   // Header (1) + gap (1) + process info (1) + gap (1) + border (2) + spawnError extra (~3) + copyMessage (1?) + selectList (~errorItems) + footer
   const errorLogHeight = Math.max(3, height - 10 - Math.min(errorItems.length, 6) - (copyMessage ? 1 : 0));
   const errorCardWidth = Math.max(30, (panelMode ? width - 4 : width) - 2);
@@ -543,9 +504,9 @@ export function CommandExecution({
     <Box flexDirection="column" paddingX={panelMode ? 1 : 0}>
       {/* Header */}
       <Box marginBottom={1} gap={1}>
-        <Text color="red" bold>{"✗"} {cmdDisplay}</Text>
+        <Text color="red" bold>{"\u2717"} {cmdDisplay}</Text>
         <ToolBadge tool={tool} />
-        <Text color="red">● {errorStatusLabel}</Text>
+        <Text color="red">{"\u25CF"} {errorStatusLabel}</Text>
       </Box>
 
       {/* Process info */}
@@ -569,46 +530,35 @@ export function CommandExecution({
 
       {!result?.spawnError && !hasDebug && (
         <Box marginBottom={1} gap={1}>
-          <Text dimColor>💡 Tip: retry with</Text>
+          <Text dimColor>{"\uD83D\uDCA1"} Tip: retry with</Text>
           <Text color={inkColors.accent}>--debug</Text>
           <Text dimColor>to see detailed logs</Text>
         </Box>
       )}
 
       {/* Output box */}
-      <Box
-        flexDirection="column"
-        borderStyle="round"
-        borderColor={outputFocused ? "red" : panel.borderDim}
-        paddingX={1}
+      <TerminalBox
+        stdout={result?.stdout}
+        stderr={result?.stderr}
+        height={errorLogHeight}
         width={errorCardWidth}
-      >
-        <ScrollableBox
-          height={errorLogHeight}
-          isActive={isInputActive && outputFocused}
-          autoScrollToBottom
-        >
-          {errorLines.length === 0
-            ? [<Text key="empty" dimColor>No output</Text>]
-            : errorLines.map((line, i) => (
-                <Text key={i} wrap="truncate">{line}</Text>
-              ))
-          }
-        </ScrollableBox>
-      </Box>
+        isActive={isInputActive && outputFocused}
+        focused={outputFocused}
+        borderColor={outputFocused ? "red" : panel.borderDim}
+        autoScrollToBottom
+        emptyMessage="No output"
+        footerHints={[
+          { key: "/", label: outputFocused ? "menu" : "scroll" },
+          ...(outputFocused ? [{ key: "\u2191\u2193", label: "scroll" }, { key: "c", label: "copy" }] : []),
+          { key: "Esc", label: "back" },
+        ]}
+      />
 
       {copyMessage && (
         <Box>
           <Text color={inkColors.accent}>{copyMessage}</Text>
         </Box>
       )}
-
-      {/* Footer hints */}
-      <Box marginTop={1} gap={2}>
-        <Text dimColor>/:{outputFocused ? "menu" : "scroll"}</Text>
-        {outputFocused && <Text dimColor>↑↓:scroll</Text>}
-        <Text dimColor>Esc:back</Text>
-      </Box>
 
       <SelectList
         items={errorItems}
@@ -634,6 +584,7 @@ export function CommandExecution({
               setCopyMessage(undefined);
               setAborting(false);
               setFeedback(undefined);
+              setOutputFocused(false);
               reset();
               setPhase("running");
               break;
@@ -644,6 +595,7 @@ export function CommandExecution({
               setCopyMessage(undefined);
               setAborting(false);
               setFeedback(undefined);
+              setOutputFocused(false);
               reset();
               setPhase("running");
               break;
@@ -660,12 +612,12 @@ export function CommandExecution({
             }
             case "copy":
               await copyToClipboard(cmdDisplay);
-              setCopyMessage("✓ Command copied to clipboard");
+              setCopyMessage("\u2713 Command copied to clipboard");
               break;
             case "copy-output": {
               const output = [result?.stdout, result?.stderr].filter(Boolean).join("\n");
               await copyToClipboard(output);
-              setCopyMessage("✓ Output copied to clipboard");
+              setCopyMessage("\u2713 Output copied to clipboard");
               break;
             }
             case "menu":
