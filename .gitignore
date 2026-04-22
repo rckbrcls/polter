@@ -7,6 +7,9 @@ dist/bin/
 build/
 coverage/
 *.tsbuildinfo
+desktop/electron/dist/
+desktop/electron/dist-electron/
+packages/*/dist/
 
 # Environment files
 .env

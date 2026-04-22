@@ -10,6 +10,17 @@ export interface CommandDef {
   suggestedArgs?: SuggestedArg[];
   editorTarget?: "config" | "code";
   interactive?: boolean;
+
+  // --- Execution metadata (Phase 1) ---
+
+  /** True if this command only reads state and never mutates. */
+  isReadOnly?: boolean;
+  /** True if this command can delete data or cause irreversible changes. */
+  isDestructive?: boolean;
+  /** Default timeout in milliseconds. Overridden by ExecuteOptions.timeoutMs. */
+  timeoutMs?: number;
+  /** True if the command can be safely retried on transient failures. */
+  retryable?: boolean;
 }
 
 export interface SuggestedArg {
