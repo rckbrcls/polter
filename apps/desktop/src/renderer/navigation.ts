@@ -1,4 +1,4 @@
-import type { Feature } from "@polterware/polter-core";
+import type { Feature } from "@polterware/core";
 
 export type SidebarViewId =
   | "pinned"

@@ -1,4 +1,4 @@
-// JSON-RPC 2.0 types for IPC between TUI (server) and MCP (client)
+// JSON-RPC 2.0 types for IPC between the Polter runtime service and clients.
 
 export interface RpcRequest {
   jsonrpc: "2.0";
@@ -14,7 +14,7 @@ export interface RpcResponse {
   error?: { code: number; message: string };
 }
 
-// Methods exposed by the TUI server:
+// Methods exposed by the runtime service:
 // "ps.list"         → ProcessInfo[]
 // "ps.start"        → { command, args, cwd, id? } → ProcessInfo
 // "ps.stop"         → { id } → ProcessInfo
@@ -23,7 +23,7 @@ export interface RpcResponse {
 // "ps.find_by_cwd"  → { cwd, filter? } → ProcessInfo[]
 // "ps.find_running"  → { cwd, command, args } → ProcessInfo | null
 // "ps.generate_id"  → { command, args } → string
-// "status"          → { tui: true, pid: number }
+// "status"          -> { service: "polter", pid: number }
 
 const DELIMITER = "\n";
 

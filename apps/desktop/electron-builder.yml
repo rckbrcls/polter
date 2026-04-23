@@ -1,0 +1,37 @@
+appId: com.polterware.polter
+productName: Polter
+asar: true
+
+directories:
+  buildResources: resources
+  output: release/${version}
+
+files:
+  - out/**/*
+  - package.json
+  - "!**/*.map"
+
+mac:
+  identity: null
+  category: public.app-category.developer-tools
+  target:
+    - dmg
+  icon: resources/icon.png
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: resources/icon.png
+
+linux:
+  target:
+    - AppImage
+  category: Development
+  icon: resources/icon.png
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true

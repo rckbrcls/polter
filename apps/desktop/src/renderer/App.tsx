@@ -6,6 +6,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import type { JSX } from "react";
 import type {
   CommandDef,
   DesktopAppInfo,
@@ -26,7 +27,7 @@ import type {
   ProcessOutput,
   ProjectConfig,
   StatusResult,
-} from "@polterware/polter-core";
+} from "@polterware/core";
 import type { LucideIcon } from "lucide-react";
 import {
   AlertCircleIcon,

@@ -35,7 +35,7 @@ import {
   type Pipeline,
   type PipelineSource,
   type ProjectConfig,
-} from "@polterware/polter-core";
+} from "@polterware/core";
 import { IPC_CHANNELS } from "../shared/ipc.js";
 
 type Handler = (event: IpcMainInvokeEvent, payload?: any) => unknown | Promise<unknown>;

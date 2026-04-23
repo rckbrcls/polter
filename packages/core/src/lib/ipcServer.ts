@@ -100,7 +100,7 @@ const handlers: Record<string, RpcHandler> = {
     return generateProcessId(command, args);
   },
 
-  status: () => ({ tui: true, pid: process.pid }),
+  status: () => ({ service: "polter", pid: process.pid }),
 };
 
 async function handleRequest(req: RpcRequest): Promise<RpcResponse> {

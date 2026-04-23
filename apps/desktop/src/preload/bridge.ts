@@ -22,7 +22,7 @@ import type {
   ProjectConfig,
   SkillSetupResult,
   StatusResult,
-} from "@polterware/polter-core";
+} from "@polterware/core";
 import { IPC_CHANNELS } from "../shared/ipc.js";
 
 export interface IpcInvokeLike {

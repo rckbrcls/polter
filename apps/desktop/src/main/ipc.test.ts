@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getCommandById } from "@polterware/polter-core";
+import { getCommandById } from "@polterware/core";
 import { createPolterIpcHandlers } from "./ipc.js";
 import { IPC_CHANNELS } from "../shared/ipc.js";
 

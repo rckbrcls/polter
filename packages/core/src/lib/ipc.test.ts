@@ -33,8 +33,8 @@ describe("IPC server + client", () => {
     await client.connect();
     cleanups.push(() => client.disconnect());
 
-    const result = await client.call("status") as { tui: boolean; pid: number };
-    expect(result.tui).toBe(true);
+    const result = await client.call("status") as { service: string; pid: number };
+    expect(result.service).toBe("polter");
     expect(typeof result.pid).toBe("number");
   });
 
@@ -110,7 +110,7 @@ describe("IPC server + client", () => {
     cleanups.push(() => client.disconnect());
 
     const result = await client.call("status");
-    expect(result).toEqual({ tui: true, pid: process.pid });
+    expect(result).toEqual({ service: "polter", pid: process.pid });
   });
 
   it("handles multiple sequential calls", async () => {
@@ -128,7 +128,7 @@ describe("IPC server + client", () => {
     const r2 = await client.call("ps.list");
     const r3 = await client.call("status");
 
-    expect(r1).toEqual({ tui: true, pid: process.pid });
+    expect(r1).toEqual({ service: "polter", pid: process.pid });
     expect(Array.isArray(r2)).toBe(true);
     expect(r3).toEqual(r1);
   });

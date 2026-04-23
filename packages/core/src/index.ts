@@ -155,7 +155,7 @@ export {
   type ParsedCliCommand,
 } from "./lib/cliArgs.js";
 export { commandExists, execCapture } from "./lib/system.js";
-export { parseErrorSuggestions, type ParsedErrorSuggestion } from "./lib/errorSuggestions.js";
+export { parseErrorSuggestions, type ErrorSuggestion } from "./lib/errorSuggestions.js";
 export { generatePolterYaml } from "./lib/yamlWriter.js";
 
 // Desktop services
