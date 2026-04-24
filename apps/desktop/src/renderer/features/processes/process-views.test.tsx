@@ -1,90 +1,132 @@
-import type { ProcessInfo } from "../workbench/types.js";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
+import type { CommandDef } from "../workbench/types.js";
 import type { Workbench } from "../workbench/use-workbench.js";
+import { ProcessCommandBoard } from "./process-command-board.js";
+import {
+  filterKnownCommands,
+  findKnownCommandByInput,
+  resolveKnownProcessCommand,
+  resolveManualProcessCommand,
+} from "./process-command-model.js";
 import { ProcessesView } from "./process-views.js";
 
-function processInfo(overrides: Partial<ProcessInfo> = {}): ProcessInfo {
-  return {
-    id: "desktop-dev",
-    command: "pnpm",
-    args: ["dev"],
-    cwd: "/workspace/polter",
-    pid: 123,
-    status: "running",
-    exitCode: null,
-    signal: null,
-    startedAt: "2026-04-24T00:00:00.000Z",
-    exitedAt: null,
-    uptime: 1000,
-    ...overrides,
-  };
-}
+const commands: CommandDef[] = [
+  {
+    id: "pkg:typecheck",
+    tool: "pkg",
+    base: ["typecheck"],
+    label: "Typecheck",
+    hint: "Run TypeScript checks.",
+  },
+  {
+    id: "git:status",
+    tool: "git",
+    base: ["status"],
+    label: "Git Status",
+    hint: "Inspect repository state.",
+    isReadOnly: true,
+  },
+];
 
 function workbench(overrides: Partial<Workbench> = {}): Workbench {
   return {
-    deferredProcessOutput: "",
-    processArgsText: "",
-    processCommand: "",
-    processes: [],
-    refreshProcesses: vi.fn(),
-    removeSelectedProcess: vi.fn(),
-    selectedProcessId: "",
-    setProcessArgsText: vi.fn(),
-    setProcessCommand: vi.fn(),
-    setSelectedProcessId: vi.fn(),
-    startManualProcess: vi.fn(),
-    stopSelectedProcess: vi.fn(),
+    allCommands: commands,
+    pins: {
+      commandPins: ["git:status"],
+      runPins: ["pnpm test src/renderer"],
+    },
+    clearProcessCommandDraft: vi.fn(),
+    processCommandDraft: "",
+    refreshWorkspaceScripts: vi.fn(),
+    runWorkspaceScript: vi.fn(),
+    startProcessFromCommandLine: vi.fn(),
+    workspace: {
+      cwd: "/mock/polter",
+      root: "/mock/polter",
+      packageManager: { id: "pnpm", lockFile: "pnpm-lock.yaml", command: "pnpm" },
+      rootScripts: [{ name: "test", command: "vitest run" }],
+      childRepos: [],
+      projectConfig: {
+        version: 1,
+        tools: {},
+        pipelines: [],
+      },
+    },
     ...overrides,
   } as unknown as Workbench;
 }
 
 describe("ProcessesView", () => {
-  it("renders the empty process state", () => {
+  it("renders direct process launch controls without staging cards", () => {
     const markup = renderToStaticMarkup(<ProcessesView workbench={workbench()} />);
 
-    expect(markup).toContain("No processes tracked");
-    expect(markup).toContain("No process selected");
-    expect(markup).toContain("Start Process");
+    expect(markup).toContain("Search or type a command");
+    expect(markup).toContain("Start command");
+    expect(markup).toContain("Pinned");
+
+    expect(markup).not.toContain("Package scripts");
+    expect(markup).not.toContain("pnpm run test");
+    expect(markup).not.toContain("Known");
+    expect(markup).not.toContain("Manual");
+    expect(markup).not.toContain("Add command");
+    expect(markup).not.toContain("Create pipeline");
+    expect(markup).not.toContain("Run all");
+    expect(markup).not.toContain("idle");
   });
 
-  it("renders a running process with logs and stop action", () => {
+  it("renders the command board without staged command controls", () => {
     const markup = renderToStaticMarkup(
-      <ProcessesView
-        workbench={workbench({
-          deferredProcessOutput: "server ready",
-          processes: [processInfo()],
-          selectedProcessId: "desktop-dev",
-        })}
+      <ProcessCommandBoard
+        knownCommandResults={commands}
+        onCommandInputRun={vi.fn()}
+        onKnownCommandSelect={vi.fn()}
+        onPinnedCommandRun={vi.fn()}
+        onSearchQueryChange={vi.fn()}
+        pinnedCommands={["git:status"]}
+        searchQuery="pnpm test"
+        selectedKnownCommand={null}
+        selectedKnownCommandId=""
       />,
     );
 
-    expect(markup).toContain("desktop-dev");
-    expect(markup).toContain("server ready");
-    expect(markup).toContain("running");
-    expect(markup).toContain("Stop");
-    expect(markup).toContain("Remove");
+    expect(markup).toContain("process-command-input");
+    expect(markup).toContain("Start command");
+    expect(markup).toContain("pnpm test");
+    expect(markup).not.toContain("Review this staged command");
+    expect(markup).not.toContain("Package scripts");
+    expect(markup).not.toContain("Create pipeline");
+    expect(markup).not.toContain("Run all");
   });
 
-  it("renders an exited process with remove action", () => {
-    const markup = renderToStaticMarkup(
-      <ProcessesView
-        workbench={workbench({
-          processes: [
-            processInfo({
-              status: "exited",
-              exitCode: 0,
-              exitedAt: "2026-04-24T00:01:00.000Z",
-            }),
-          ],
-          selectedProcessId: "desktop-dev",
-        })}
-      />,
-    );
+  it("filters known commands for autocomplete", () => {
+    expect(filterKnownCommands(commands, "type").map((command) => command.label)).toEqual([
+      "Typecheck",
+    ]);
+    expect(filterKnownCommands(commands, "repository").map((command) => command.label)).toEqual([
+      "Git Status",
+    ]);
+  });
 
-    expect(markup).toContain("exited");
-    expect(markup).toContain("Stop");
-    expect(markup).toContain("Remove");
-    expect(markup).toContain(">0<");
+  it("resolves manual command lines for direct process launch", () => {
+    expect(resolveManualProcessCommand("pnpm test src/renderer")).toEqual({
+      command: "pnpm",
+      args: ["test", "src/renderer"],
+    });
+    expect(resolveManualProcessCommand("   ")).toBeNull();
+  });
+
+  it("resolves known and pinned commands for direct process launch", () => {
+    expect(resolveKnownProcessCommand(commands[0]!, "pnpm")).toEqual({
+      command: "pnpm",
+      args: ["typecheck"],
+    });
+    expect(resolveKnownProcessCommand(commands[1]!, "pnpm")).toEqual({
+      command: "git",
+      args: ["status"],
+    });
+    expect(findKnownCommandByInput(commands, "git:status")).toBe(commands[1]);
+    expect(findKnownCommandByInput(commands, "Typecheck")).toBe(commands[0]);
+    expect(findKnownCommandByInput(commands, "pnpm test")).toBeNull();
   });
 });

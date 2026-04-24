@@ -129,6 +129,41 @@ export interface WorkspaceScript {
   command: string;
 }
 
+export type ScriptLanguage = "shell" | "python";
+
+export type ScriptSource = "custom" | "package" | "template";
+
+export interface ScriptStageTarget {
+  commandLine: string;
+  cwd: string;
+  label: string;
+  source: ScriptSource;
+}
+
+export interface ScriptLibraryItem {
+  id: string;
+  source: ScriptSource;
+  name: string;
+  description: string;
+  language: ScriptLanguage;
+  path: string;
+  repoName: string;
+  repoPath: string;
+  command: string;
+  commandLine: string;
+  body: string;
+  editable: boolean;
+  templateId?: string;
+}
+
+export interface ScriptTemplate {
+  id: string;
+  name: string;
+  description: string;
+  language: ScriptLanguage;
+  body: string;
+}
+
 export interface ChildRepoSnapshot {
   name: string;
   path: string;
@@ -252,6 +287,8 @@ export interface WorkbenchSnapshot {
   allCommands: CommandDef[];
   pins: DesktopPins;
   pipelines: PipelineWithSource[];
+  customScripts: ScriptLibraryItem[];
+  scriptTemplates: ScriptTemplate[];
   workspace: DesktopWorkspaceSnapshot;
   toolStatus: DesktopToolStatusSnapshot;
   projectConfig: ProjectConfig;
@@ -281,6 +318,8 @@ export interface WorkbenchAdapter {
     plan: DesktopDeclarativePlan;
   }>;
   applyInfrastructure(cwd?: string): Promise<DesktopDeclarativeApplyResult>;
+  saveCustomScript(script: ScriptLibraryItem): Promise<ScriptLibraryItem>;
+  duplicateScriptTemplate(templateId: string, cwd: string): Promise<ScriptLibraryItem>;
   runWorkspaceScript(
     repoPath: string,
     script: string,

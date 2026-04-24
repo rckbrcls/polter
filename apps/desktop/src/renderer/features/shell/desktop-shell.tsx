@@ -226,7 +226,7 @@ export function DesktopShell({
               </div>
             </div>
 
-            <div className="flex-1 px-4 py-6 md:px-6">{children}</div>
+            <div className="app-shell-content flex-1 px-4 py-6 md:px-6">{children}</div>
           </SidebarInset>
         </div>
       </SidebarProvider>

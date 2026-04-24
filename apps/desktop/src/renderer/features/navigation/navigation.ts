@@ -4,6 +4,7 @@ import {
   BlocksIcon,
   BracesIcon,
   CommandIcon,
+  FileCogIcon,
   HammerIcon,
   PlayIcon,
   Settings2Icon,
@@ -34,9 +35,11 @@ export interface HeaderRouteItem extends SidebarItem {
 }
 
 export const headerWorkflowItems: HeaderRouteItem[] = [
-  { id: "pipelines", label: "Pipelines", shortcut: 1 },
-  { id: "processes", label: "Processes", shortcut: 2 },
+  { id: "processes", label: "Processes", shortcut: 1 },
+  { id: "pipelines", label: "Pipelines", shortcut: 2 },
   { id: "scripts", label: "Scripts", shortcut: 3 },
+  { id: "infrastructure", label: "Infrastructure", shortcut: 4 },
+  { id: "project-config", label: "Project Config", shortcut: 5 },
 ];
 
 export const workflowNavigationItems: SidebarItem[] = headerWorkflowItems.map(({ id, label }) => ({
@@ -47,9 +50,7 @@ export const workflowNavigationItems: SidebarItem[] = headerWorkflowItems.map(({
 export const workflowSidebarItems = workflowNavigationItems;
 
 export const systemSidebarItems: SidebarItem[] = [
-  { id: "infrastructure", label: "Infrastructure" },
   { id: "tool-status", label: "Tool Status" },
-  { id: "project-config", label: "Project Config" },
   { id: "mcp", label: "MCP" },
   { id: "skills", label: "Skill Setup" },
   { id: "settings", label: "Settings" },
@@ -72,7 +73,7 @@ export function getViewIcon(viewId: SidebarViewId): LucideIcon {
     case "tool-status":
       return WrenchIcon;
     case "project-config":
-      return BracesIcon;
+      return FileCogIcon;
     case "mcp":
       return BlocksIcon;
     case "skills":

@@ -8,6 +8,7 @@ import type {
   ProcessInfo,
 } from "../workbench/types.js";
 import { getCommandValue } from "../shared/utils.js";
+import { getPackageScriptCommandLine } from "../scripts/script-library-model.js";
 
 export type SearchDocumentKind = "command" | "pipeline" | "script" | "project" | "process";
 
@@ -150,7 +151,12 @@ export function buildSearchDocuments({
         kind: "script",
         title: script.name,
         subtitle: `Root script - ${script.command}`,
-        commandValue: script.command,
+        commandValue: getPackageScriptCommandLine(
+          workspace.packageManager.command,
+          workspace.root,
+          script.name,
+          workspace.root,
+        ),
         tool: workspace.packageManager.id,
         featureLabel: "Scripts",
         description: script.command,
@@ -168,7 +174,12 @@ export function buildSearchDocuments({
           kind: "script",
           title: script.name,
           subtitle: `${repo.name} - ${script.command}`,
-          commandValue: script.command,
+          commandValue: getPackageScriptCommandLine(
+            repo.pkgManager.command,
+            repo.path,
+            script.name,
+            workspace.root,
+          ),
           tool: repo.pkgManager.id,
           featureLabel: "Scripts",
           description: script.command,

@@ -46,6 +46,9 @@
 - Build a serious desktop command workbench: dense, scannable, keyboard-friendly, and operational.
 - Avoid marketing heroes, generic SaaS landing sections, glassmorphism, neon glow, gradient orbs, oversized cards, and decorative placeholder dashboards.
 - Prefer durable app surfaces: sidebars, tables, inspectors, command palettes, logs, forms, status strips, and split panes.
+- Keep visible labels and helper copy minimal. Avoid redundant page titles, sentence-length labels, and explanatory paragraphs when navigation, placeholders, empty states, or tooltips can carry the context.
+- Avoid cards inside cards. Do not wrap a whole page section in a card and then place card-like rows or forms inside it unless the inner surface is a modal/dialog or a repeated record that needs independent framing.
+- Creation and editing flows SHOULD use a dedicated page mode, modal, sheet, or builder surface. Do not mix large creation/edit forms into the same surface as the primary list.
 - Use `shadcn/ui` primitives only when they serve the desktop workflow; do not let default component styling override the product direction in `DESIGN.md`.
 
 ## Dependency Policy

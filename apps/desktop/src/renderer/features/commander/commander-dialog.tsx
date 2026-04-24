@@ -23,7 +23,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { EmptyState, OutputPanel } from "../shared/components.js";
 import { ToolIcon } from "../shared/tool-icons.js";
@@ -214,7 +213,7 @@ function GenericInspector({
     document.kind === "pipeline"
       ? "Run pipeline"
       : document.kind === "script"
-        ? "Run in background"
+        ? "Stage in Processes"
         : document.kind === "project"
           ? "Switch project"
           : "Open process";
@@ -272,6 +271,24 @@ function GenericInspector({
         />
       ) : null}
     </div>
+  );
+}
+
+function CommanderSearchFooter({
+  onSearchTermChange,
+  searchTerm,
+}: {
+  onSearchTermChange: (value: string) => void;
+  searchTerm: string;
+}): JSX.Element {
+  return (
+    <CommandInput
+      value={searchTerm}
+      onValueChange={onSearchTermChange}
+      placeholder="Search commands, pipelines, scripts, projects..."
+      wrapperClassName="shrink-0 p-0"
+      inputGroupClassName="h-11 bg-input/50"
+    />
   );
 }
 
@@ -412,7 +429,7 @@ export function CommanderDialog({
     }
 
     if (document.kind === "script" && document.repoPath && document.scriptName) {
-      await workbench.runWorkspaceScript(document.repoPath, document.scriptName);
+      workbench.stageProcessCommand(document.commandValue);
       onOpenChange(false);
       return;
     }
@@ -444,22 +461,23 @@ export function CommanderDialog({
       className="top-[12vh] w-[min(calc(100vw-2rem),72rem)] max-w-none border border-border bg-popover sm:max-w-none [&_[data-slot=dialog-close]]:!right-2.5 [&_[data-slot=dialog-close]]:!top-2.5"
       showCloseButton
     >
-      <Command shouldFilter={false} className="h-[min(72vh,34rem)] max-h-none min-h-0">
-        <CommandInput
-          value={searchTerm}
-          onValueChange={setSearchTerm}
-          placeholder="Search commands, pipelines, scripts, projects..."
-        />
-        <div className="mt-3 grid min-h-0 flex-1 md:grid-cols-[minmax(0,24rem)_minmax(0,1fr)] md:gap-4">
-          <CommandList className="h-full max-h-none">
+      <Command
+        shouldFilter={false}
+        className="h-[min(76vh,40rem)] max-h-none min-h-0 gap-3 p-4"
+      >
+        <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_minmax(0,1fr)] overflow-hidden rounded-4xl border border-border bg-background md:grid-cols-[minmax(0,24rem)_minmax(0,1fr)] md:grid-rows-1">
+          <CommandList className="h-full max-h-none border-b border-border p-2 md:border-r md:border-b-0">
             <CommandEmpty>No results found.</CommandEmpty>
-            <CommandGroup heading="Results">
+            <CommandGroup
+              heading="Results"
+              className="p-0 **:[[cmdk-group-heading]]:px-1 **:[[cmdk-group-heading]]:py-1.5"
+            >
               {results.map((document) => (
                 <CommandItem
                   key={document.id}
                   value={document.id}
                   className={cn(
-                    "items-start rounded-2xl px-2.5 py-2",
+                    "items-start rounded-2xl px-3 py-2",
                     selectedDocument?.id === document.id && "bg-muted text-foreground",
                   )}
                   onSelect={() => {
@@ -480,8 +498,8 @@ export function CommanderDialog({
             </CommandGroup>
           </CommandList>
 
-          <ScrollArea className="h-full min-h-0 rounded-3xl border border-border/60 bg-background/70">
-            <div className="grid gap-4 p-4">
+          <ScrollArea className="h-full min-h-0 bg-background">
+            <div className="grid gap-4 p-5">
               {selectedDocument ? (
                 <>
                   {selectedDocument.kind === "command" ? (
@@ -502,11 +520,6 @@ export function CommanderDialog({
                       onPrimaryAction={() => void runGenericAction(selectedDocument)}
                     />
                   )}
-                  <Separator />
-                  <p className="text-xs text-muted-foreground">
-                    Results are indexed locally with Orama full-text search. Vector embeddings can
-                    be plugged into the search document layer later.
-                  </p>
                 </>
               ) : (
                 <EmptyState
@@ -517,6 +530,7 @@ export function CommanderDialog({
             </div>
           </ScrollArea>
         </div>
+        <CommanderSearchFooter searchTerm={searchTerm} onSearchTermChange={setSearchTerm} />
       </Command>
     </CommandDialogPrimitive>
   );

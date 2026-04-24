@@ -13,6 +13,8 @@ describe("mock workbench adapter", () => {
     expect(snapshot.features.length).toBeGreaterThan(0);
     expect(snapshot.repositories.length).toBeGreaterThan(0);
     expect(snapshot.workspace.rootScripts.length).toBeGreaterThan(0);
+    expect(snapshot.customScripts.length).toBeGreaterThan(0);
+    expect(snapshot.scriptTemplates.length).toBeGreaterThan(0);
   });
 
   it("simulates command execution without running external commands", async () => {
@@ -86,5 +88,19 @@ describe("mock workbench adapter", () => {
     expect((await adapter.listProcesses()).some((processInfo) => processInfo.id === started.id)).toBe(
       false,
     );
+  });
+
+  it("duplicates script templates into mock custom scripts", async () => {
+    const adapter = createMockWorkbenchAdapter();
+    const created = await adapter.duplicateScriptTemplate("clean-node-artifacts", "/mock/polter");
+
+    expect(created).toMatchObject({
+      source: "custom",
+      name: "Clean Node Artifacts",
+      path: "/mock/polter/.polter/scripts/clean-node-artifacts.sh",
+    });
+    expect(
+      (await adapter.getSnapshot()).customScripts.some((script) => script.id === created.id),
+    ).toBe(true);
   });
 });

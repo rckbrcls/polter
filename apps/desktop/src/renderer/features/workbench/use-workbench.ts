@@ -43,6 +43,8 @@ import type {
   ProcessInfo,
   ProcessOutput,
   ProjectConfig,
+  ScriptLibraryItem,
+  ScriptTemplate,
   StatusResult,
   WorkbenchSnapshot,
 } from "./types.js";
@@ -57,6 +59,8 @@ export function useWorkbench() {
   const [allCommands, setAllCommands] = useState<CommandDef[]>([]);
   const [pins, setPins] = useState<DesktopPins>({ commandPins: [], runPins: [] });
   const [pipelines, setPipelines] = useState<PipelineWithSource[]>([]);
+  const [customScripts, setCustomScripts] = useState<ScriptLibraryItem[]>([]);
+  const [scriptTemplates, setScriptTemplates] = useState<ScriptTemplate[]>([]);
   const [workspace, setWorkspace] = useState<DesktopWorkspaceSnapshot | null>(null);
   const [toolStatus, setToolStatus] = useState<DesktopToolStatusSnapshot | null>(null);
   const [projectConfig, setProjectConfig] = useState<ProjectConfig | undefined>();
@@ -67,7 +71,7 @@ export function useWorkbench() {
     useState<DesktopDeclarativeApplyResult | null>(null);
   const [mcpStatus, setMcpStatus] = useState<McpStatusInfo | null>(null);
   const [skillPreview, setSkillPreview] = useState<DesktopSkillPreview | null>(null);
-  const [selectedView, setSelectedView] = useState<SidebarViewId>("pipelines");
+  const [selectedView, setSelectedView] = useState<SidebarViewId>("processes");
   const [selectedCommandId, setSelectedCommandId] = useState("");
   const [commandForm, setCommandForm] = useState<DesktopCommandForm | null>(null);
   const [commandArgsText, setCommandArgsText] = useState("");
@@ -83,6 +87,7 @@ export function useWorkbench() {
   const [processes, setProcesses] = useState<ProcessInfo[]>([]);
   const [selectedProcessId, setSelectedProcessId] = useState("");
   const [processLogs, setProcessLogs] = useState<ProcessOutput | null>(null);
+  const [processCommandDraft, setProcessCommandDraft] = useState("");
   const [processCommand, setProcessCommand] = useState("");
   const [processArgsText, setProcessArgsText] = useState("");
   const [message, setMessage] = useState("");
@@ -132,6 +137,8 @@ export function useWorkbench() {
     setAllCommands(snapshot.allCommands);
     setPins(snapshot.pins);
     setPipelines(snapshot.pipelines);
+    setCustomScripts(snapshot.customScripts);
+    setScriptTemplates(snapshot.scriptTemplates);
     setWorkspace(snapshot.workspace);
     setToolStatus(snapshot.toolStatus);
     setProjectConfig(snapshot.projectConfig);
@@ -172,6 +179,17 @@ export function useWorkbench() {
       );
     } catch (processError) {
       setError(`Could not refresh mock activity: ${(processError as Error).message}`);
+    }
+  }
+
+  async function refreshWorkspaceScripts() {
+    setError("");
+
+    try {
+      applySnapshot(await adapter.getSnapshot(cwd));
+      setMessage("Workspace scripts refreshed.");
+    } catch (workspaceError) {
+      setError(`Could not refresh workspace scripts: ${(workspaceError as Error).message}`);
     }
   }
 
@@ -286,10 +304,13 @@ export function useWorkbench() {
     setPins(await adapter.toggleRunPin(runCommand));
   }
 
-  async function savePipelineDraft() {
+  async function savePipelineDraft(
+    nextPipeline: Pipeline = pipelineDraft,
+    nextSource: PipelineSource = pipelineSource,
+  ) {
     setError("");
     try {
-      const savedPipeline = await adapter.savePipeline(pipelineDraft, pipelineSource, cwd);
+      const savedPipeline = await adapter.savePipeline(nextPipeline, nextSource, cwd);
       setPipelineDraft(savedPipeline);
       setPipelines((await adapter.getSnapshot(cwd)).pipelines);
       setMessage(`Saved mock pipeline "${savedPipeline.name}".`);
@@ -408,7 +429,56 @@ export function useWorkbench() {
     }
   }
 
+  async function saveCustomScript(script: ScriptLibraryItem): Promise<ScriptLibraryItem | null> {
+    setError("");
+
+    try {
+      const savedScript = await adapter.saveCustomScript(script);
+      const snapshot = await adapter.getSnapshot(cwd);
+      setCustomScripts(snapshot.customScripts);
+      setMessage(`Saved mock script "${savedScript.name}".`);
+      return savedScript;
+    } catch (scriptError) {
+      setError((scriptError as Error).message);
+      return null;
+    }
+  }
+
+  async function duplicateScriptTemplate(templateId: string): Promise<ScriptLibraryItem | null> {
+    setError("");
+
+    try {
+      const script = await adapter.duplicateScriptTemplate(templateId, cwd);
+      const snapshot = await adapter.getSnapshot(cwd);
+      setCustomScripts(snapshot.customScripts);
+      setMessage(`Created mock script "${script.name}".`);
+      return script;
+    } catch (scriptError) {
+      setError((scriptError as Error).message);
+      return null;
+    }
+  }
+
+  function stageProcessCommand(commandLine: string): void {
+    const stagedCommand = commandLine.trim();
+
+    if (!stagedCommand) {
+      setError("Choose a script before staging a process command.");
+      return;
+    }
+
+    setProcessCommandDraft(stagedCommand);
+    setSelectedView("processes");
+    setMessage("Command staged in Processes.");
+  }
+
+  function clearProcessCommandDraft(): void {
+    setProcessCommandDraft("");
+  }
+
   async function runWorkspaceScript(repoPath: string, script: string) {
+    setError("");
+
     try {
       const processInfo = await adapter.runWorkspaceScript(repoPath, script, []);
       setProcesses(await adapter.listProcesses(cwd));
@@ -420,23 +490,47 @@ export function useWorkbench() {
     }
   }
 
-  async function startManualProcess() {
-    const command = processCommand.trim();
-    if (!command) {
+  async function startResolvedProcess(
+    command: string,
+    args: string[],
+    successMessage = "Mock background process started.",
+  ): Promise<boolean> {
+    const normalizedCommand = command.trim();
+
+    if (!normalizedCommand) {
       setError("Enter a command to start a mock process.");
+      return false;
+    }
+
+    setError("");
+
+    try {
+      const processInfo = await adapter.startProcess(normalizedCommand, args, cwd);
+      setProcesses(await adapter.listProcesses(cwd));
+      setSelectedProcessId(processInfo.id);
+      setSelectedView("processes");
+      setMessage(successMessage);
+      return true;
+    } catch (processError) {
+      setError((processError as Error).message);
+      return false;
+    }
+  }
+
+  async function startProcessFromCommandLine(commandLine: string): Promise<boolean> {
+    const [command, ...args] = splitArgs(commandLine);
+    return startResolvedProcess(command ?? "", args);
+  }
+
+  async function startManualProcess() {
+    const started = await startResolvedProcess(processCommand, splitArgs(processArgsText));
+
+    if (!started) {
       return;
     }
 
-    try {
-      const processInfo = await adapter.startProcess(command, splitArgs(processArgsText), cwd);
-      setProcessCommand("");
-      setProcessArgsText("");
-      setProcesses(await adapter.listProcesses(cwd));
-      setSelectedProcessId(processInfo.id);
-      setMessage("Mock background process started.");
-    } catch (processError) {
-      setError((processError as Error).message);
-    }
+    setProcessCommand("");
+    setProcessArgsText("");
   }
 
   async function stopSelectedProcess(id: string) {
@@ -555,6 +649,8 @@ export function useWorkbench() {
         return processes.length ? String(processes.length) : undefined;
       case "scripts": {
         const total =
+          customScripts.length +
+          scriptTemplates.length +
           (workspace?.rootScripts.length ?? 0) +
           (workspace?.childRepos.reduce((count, repo) => count + repo.scripts.length, 0) ?? 0);
         return total ? String(total) : undefined;
@@ -582,12 +678,15 @@ export function useWorkbench() {
     commandArgsText,
     commandFlags,
     commandForm,
+    clearProcessCommandDraft,
     cwdDraft,
+    customScripts,
     declarativeApplyResult,
     declarativePlan,
     declarativeStatus,
     deferredCommandOutput,
     deferredProcessOutput,
+    duplicateScriptTemplate,
     error,
     features,
     getSidebarBadge,
@@ -602,11 +701,13 @@ export function useWorkbench() {
     pipelines,
     processArgsText,
     processCommand,
+    processCommandDraft,
     processes,
     projectConfig,
     projectConfigText,
     refreshInfrastructure,
     refreshProcesses,
+    refreshWorkspaceScripts,
     removeRepository,
     removeMcp,
     removePipeline,
@@ -617,7 +718,9 @@ export function useWorkbench() {
     runSelectedCommand,
     runWorkspaceScript,
     savePipelineDraft,
+    saveCustomScript,
     saveProjectConfigDraft,
+    scriptTemplates,
     selectedCommandId,
     selectedFeature,
     selectedFeatureCommands,
@@ -642,7 +745,9 @@ export function useWorkbench() {
     setStepLabel,
     setupSkill,
     skillPreview,
+    stageProcessCommand,
     startManualProcess,
+    startProcessFromCommandLine,
     stepArgsText,
     stepCommandId,
     stepContinueOnError,

@@ -130,16 +130,16 @@ describe("commander search documents", () => {
 
   it("indexes pipelines, scripts, projects, and processes", () => {
     const documents = buildDocuments();
+    const rootScript = documents.find((document) => document.id === "script:/workspace/polter:typecheck");
+    const desktopScript = documents.find(
+      (document) => document.id === "script:/workspace/polter/apps/desktop:test",
+    );
 
-    expect(documents.some((document) => document.id === "pipeline:project:desktop-checks")).toBe(
-      true,
+    expect(documents.some((document) => document.id === "pipeline:project:desktop-checks")).toBe(true);
+    expect(rootScript?.commandValue).toBe("pnpm run typecheck");
+    expect(desktopScript?.commandValue).toBe(
+      "pnpm --dir /workspace/polter/apps/desktop run test",
     );
-    expect(documents.some((document) => document.id === "script:/workspace/polter:typecheck")).toBe(
-      true,
-    );
-    expect(
-      documents.some((document) => document.id === "script:/workspace/polter/apps/desktop:test"),
-    ).toBe(true);
     expect(documents.some((document) => document.id === "project:polterware-web")).toBe(true);
     expect(documents.some((document) => document.id === "process:desktop-dev")).toBe(true);
   });

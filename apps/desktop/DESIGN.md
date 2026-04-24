@@ -234,11 +234,25 @@ Radius is part of the theme, not an ad hoc component decision. The base token is
 
 Do not use numeric arbitrary radii such as `rounded-[1.5rem]` in active renderer code. `rounded-full` is allowed only for true circles, switches, sliders, and token-like controls. `rounded-[inherit]` is allowed only when a child must match the parent radius exactly.
 
+## Spacing And Padding
+
+Spacing is part of the theme scale. Use Tailwind spacing utilities in 4px increments and avoid arbitrary padding values in active renderer code.
+
+- Dense rows: `px-3 py-2`.
+- Compact grouped fields: `p-3` or `p-4`.
+- Dialog and command palette shells: `p-4`.
+- Inspector panes: `p-5`.
+- Tool strips: `p-3` or `p-4`, separated from scrollable content.
+
+Command palettes must keep results and search input as distinct surfaces. A single search input may sit directly in the footer without an extra wrapper card; only add a grouped footer surface when it carries multiple controls.
+
 ## Typography
 
 Use Inter Variable as the product typeface for now because the app already imports it and the current priority is maturity and consistency. Use system monospace for command output, exact invocations, file paths, and logs.
 
 Headings stay compact. Labels may use slight positive letter spacing, but normal body text must remain at `letterSpacing: 0`. Do not scale type with viewport width.
+
+Labels must be terse. Use one to three words for field labels, table headers, tabs, badges, and toolbar text whenever possible. Do not use sentence-length labels, explanatory labels, redundant page titles, or long helper copy as a substitute for clear layout. Keep the default interface minimal; move necessary explanation into placeholders, tooltips, empty states, inspectors, or documentation instead of making every surface describe itself.
 
 ## Layout
 
@@ -250,6 +264,18 @@ The default shape is a command workbench:
 - Tight but breathable spacing based on 4px increments.
 
 Prefer split panes, tables, grouped fields, command palettes, toolbars, context menus, toasts, and status strips. Do not build landing-page hero sections inside the app.
+
+Avoid nested card structures. A card may own a compact record, command, or repeated item, but page sections must not be framed as large cards that contain more card-like rows or forms. Forms and actions should not be stacked as cards inside larger cards. Use a modal for simple forms, and use a dedicated page, sidebar, inspector, or split-pane view for complex forms, multi-step commands, and larger content workflows.
+
+## Scripts Surface
+
+The Scripts workflow is a library/editor surface, not a runtime monitor. Its list view should be minimal: source tabs, creation actions, script rows, and short row metadata only. Do not add a redundant page title or explanatory paragraph at the top of the list.
+
+Custom scripts are visually prepared for `.polter/scripts` storage. Until filesystem persistence is implemented, the desktop UI may keep them in mock or in-memory state, but the interface must still show the future repo-local path clearly.
+
+The primary execution-related action from Scripts is **Stage in Processes**. This fills the Processes command input for review and does not start a process automatically. Package scripts belong in Scripts for discovery and staging; Processes owns direct command launch, process state, logs, stop/remove actions, and runtime feedback.
+
+Creation and editing in Scripts must use a dedicated editor mode, modal, sheet, or builder-style page. Do not show the script list and a large edit form on the same surface.
 
 ## Elevation And Feedback
 

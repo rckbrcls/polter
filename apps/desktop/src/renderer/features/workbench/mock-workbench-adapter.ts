@@ -17,10 +17,13 @@ import type {
   ProcessInfo,
   ProcessOutput,
   ProjectConfig,
+  ScriptLibraryItem,
+  ScriptTemplate,
   StatusResult,
   WorkbenchAdapter,
   WorkbenchSnapshot,
 } from "./types.js";
+import { createCustomScript } from "../scripts/script-library-model.js";
 
 const MOCK_CWD = "/mock/polter";
 const MOCK_NOW = "2026-04-24T00:00:00.000Z";
@@ -29,6 +32,23 @@ const MOCK_PACKAGE_MANAGER = {
   lockFile: "pnpm-lock.yaml",
   command: "pnpm",
 } as const;
+
+const mockScriptTemplates: ScriptTemplate[] = [
+  {
+    id: "clean-node-artifacts",
+    name: "Clean Node Artifacts",
+    description: "Remove local install and build artifacts before a fresh workspace install.",
+    language: "shell",
+    body: "rm -rf node_modules .turbo .next dist out\npnpm install",
+  },
+  {
+    id: "summarize-failing-tests",
+    name: "Summarize Failing Tests",
+    description: "Read a test log and print failing test names for quick triage.",
+    language: "python",
+    body: "from pathlib import Path\n\nlog = Path('test-output.log')\nfor line in log.read_text().splitlines():\n    if 'FAIL' in line:\n        print(line)",
+  },
+];
 
 const mockCommands: CommandDef[] = [
   {
@@ -366,6 +386,27 @@ export function createMockWorkbenchAdapter(): WorkbenchAdapter {
       ],
     },
   ];
+  let customScriptSequence = 2;
+  let customScripts: ScriptLibraryItem[] = [
+    createCustomScript({
+      id: "custom:collect-env-snapshot",
+      name: "Collect Env Snapshot",
+      description: "Capture package manager, Node, and Git state for the active workspace.",
+      language: "shell",
+      repoName: "Root workspace",
+      repoPath: cwd,
+      body: "node --version\npnpm --version\ngit status --short",
+    }),
+    createCustomScript({
+      id: "custom:list-large-files",
+      name: "List Large Files",
+      description: "Find unusually large files before packaging or cleanup work.",
+      language: "python",
+      repoName: "Root workspace",
+      repoPath: cwd,
+      body: "from pathlib import Path\n\nfor path in Path('.').rglob('*'):\n    if path.is_file() and path.stat().st_size > 5_000_000:\n        print(path)",
+    }),
+  ];
   let repositories: DesktopRepository[] = [
     {
       id: "polter",
@@ -462,6 +503,8 @@ export function createMockWorkbenchAdapter(): WorkbenchAdapter {
       allCommands: clone(mockCommands),
       pins: clone(pins),
       pipelines: clone(pipelines),
+      customScripts: clone(customScripts),
+      scriptTemplates: clone(mockScriptTemplates),
       workspace: clone(workspace),
       toolStatus: clone(toolStatus),
       projectConfig: clone(projectConfig),
@@ -595,6 +638,33 @@ export function createMockWorkbenchAdapter(): WorkbenchAdapter {
             },
           })) ?? [],
       };
+    },
+    async saveCustomScript(script) {
+      customScripts = [
+        clone(script),
+        ...customScripts.filter((item) => item.id !== script.id),
+      ];
+      return clone(script);
+    },
+    async duplicateScriptTemplate(templateId, nextCwd = cwd) {
+      const template = mockScriptTemplates.find((item) => item.id === templateId);
+      if (!template) {
+        throw new Error(`Mock script template not found: ${templateId}`);
+      }
+
+      customScriptSequence += 1;
+      const script = createCustomScript({
+        id: `custom:${template.id}:${customScriptSequence}`,
+        name: template.name,
+        description: template.description,
+        language: template.language,
+        repoName: "Root workspace",
+        repoPath: nextCwd,
+        body: template.body,
+        templateId,
+      });
+      customScripts = [script, ...customScripts];
+      return clone(script);
     },
     async runWorkspaceScript(repoPath, script, args = [], id) {
       return saveProcess({

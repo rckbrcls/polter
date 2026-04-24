@@ -22,12 +22,22 @@
 }
 
 .app-shell-main {
+  height: 100svh;
   min-height: 100svh;
+  overflow: hidden;
 }
 
 .app-shell-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
   min-height: 3rem;
   flex-shrink: 0;
+}
+
+.app-shell-content {
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .app-system-menu {
