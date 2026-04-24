@@ -3,3 +3,34 @@
 .app-shell-surface {
   min-height: 100vh;
 }
+
+.app-shell-provider {
+  min-height: 100svh;
+  flex-direction: column;
+}
+
+.app-shell-body {
+  display: flex;
+  width: 100%;
+  min-height: 100svh;
+  flex: 1 1 auto;
+}
+
+.app-shell-sidebar {
+  top: 0 !important;
+  height: 100svh !important;
+}
+
+.app-shell-main {
+  min-height: 100svh;
+}
+
+.app-shell-toolbar {
+  min-height: 3rem;
+  flex-shrink: 0;
+}
+
+.app-system-menu {
+  box-shadow: none;
+  backdrop-filter: none;
+}

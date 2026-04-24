@@ -11,6 +11,12 @@ export const IPC_CHANNELS = {
     toggleRunPin: "commands:toggle-run-pin",
     run: "commands:run",
   },
+  repositories: {
+    list: "repositories:list",
+    add: "repositories:add",
+    remove: "repositories:remove",
+    pickDirectory: "repositories:pick-directory",
+  },
   pipelines: {
     list: "pipelines:list",
     save: "pipelines:save",

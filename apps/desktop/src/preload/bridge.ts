@@ -7,6 +7,7 @@ import type {
   DesktopDeclarativeApplyResult,
   DesktopDeclarativePlan,
   DesktopPins,
+  DesktopRepository,
   DesktopSkillPreview,
   DesktopToolStatusSnapshot,
   DesktopWorkspaceSnapshot,
@@ -47,6 +48,12 @@ export interface PolterBridge {
     toggleCommandPin(commandValue: string): Promise<DesktopPins>;
     toggleRunPin(runCommand: string): Promise<DesktopPins>;
     run(input: DesktopCommandRunInput): Promise<DesktopCommandRunResult>;
+  };
+  repositories: {
+    list(): Promise<DesktopRepository[]>;
+    add(path: string): Promise<DesktopRepository>;
+    remove(id: string): Promise<void>;
+    pickDirectory(): Promise<string | null>;
   };
   pipelines: {
     list(cwd?: string): Promise<PipelineWithSource[]>;
@@ -104,6 +111,12 @@ export function createPolterBridge(ipc: IpcInvokeLike): PolterBridge {
         invoke(IPC_CHANNELS.commands.toggleCommandPin, { commandValue }),
       toggleRunPin: (runCommand) => invoke(IPC_CHANNELS.commands.toggleRunPin, { runCommand }),
       run: (input) => invoke(IPC_CHANNELS.commands.run, input),
+    },
+    repositories: {
+      list: () => invoke(IPC_CHANNELS.repositories.list),
+      add: (path) => invoke(IPC_CHANNELS.repositories.add, { path }),
+      remove: (id) => invoke(IPC_CHANNELS.repositories.remove, { id }),
+      pickDirectory: () => invoke(IPC_CHANNELS.repositories.pickDirectory),
     },
     pipelines: {
       list: (cwd) => invoke(IPC_CHANNELS.pipelines.list, { cwd }),

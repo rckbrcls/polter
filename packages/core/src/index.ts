@@ -165,6 +165,9 @@ export {
   listDesktopCommands,
   getDesktopCommandForm,
   getDesktopPins,
+  listDesktopRepositories,
+  addDesktopRepository,
+  removeDesktopRepository,
   toggleDesktopCommandPin,
   toggleDesktopRunPin,
   runDesktopCommand,
@@ -196,6 +199,7 @@ export {
   type DesktopDeclarativeApplyResult,
   type DesktopSkillPreview,
 } from "./desktop/service.js";
+export type { DesktopRepository } from "./config/store.js";
 
 // Types
 export type {

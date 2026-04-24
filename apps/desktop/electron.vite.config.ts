@@ -13,6 +13,11 @@ export default defineConfig({
       preserveSymlinks: false,
     },
     build: {
+      // The shared workspace core imports TypeScript sources with NodeNext .js specifiers,
+      // so the Electron main bundle must inline it instead of loading src/*.ts at runtime.
+      externalizeDeps: {
+        exclude: ["@polterware/core"],
+      },
       outDir: "out/main",
       rollupOptions: {
         input: {
@@ -32,7 +37,8 @@ export default defineConfig({
           index: resolve(rootDir, "src/preload/index.ts"),
         },
         output: {
-          entryFileNames: "[name].js",
+          entryFileNames: "[name].cjs",
+          format: "cjs",
         },
       },
     },

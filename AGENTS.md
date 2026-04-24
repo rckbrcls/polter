@@ -20,6 +20,15 @@
 - The Electron renderer should consume the typed preload bridge exposed as `window.polter`; do not expose raw Electron or Node APIs to renderer code.
 - Keep public IPC channels explicit in `apps/desktop/src/shared/ipc.ts` and route implementation through main-process handlers.
 
+## Renderer Feature Architecture
+
+- New Electron renderer UI MUST be modularized by feature under `apps/desktop/src/renderer/features/<feature>/`.
+- `apps/desktop/src/renderer/App.tsx` MUST stay a composition root only: initialize top-level hooks, render the shell, and route views.
+- Screen logic, local components, and feature-specific hooks MUST live in the owning feature folder, not in `App.tsx`.
+- Cross-feature renderer sharing MUST go through `features/shared` or `components/ui`; do not create ad hoc imports between unrelated feature folders.
+- `window.polter` calls SHOULD be centralized in feature hooks or service modules, such as `features/workbench`, instead of being scattered through view components.
+- New navigation catalogs MUST live in `features/navigation` and be exported through the root compatibility module only when older imports still need it.
+
 ## Electron Workflow
 
 - The official desktop workflow is `electron-vite` for main, preload, and renderer builds, with `electron-builder` for unsigned packaging.
@@ -31,6 +40,9 @@
 ## UI And Design
 
 - `apps/desktop/DESIGN.md` is the visual source of truth for the Electron app.
+- New or changed Electron UI MUST read and follow `apps/desktop/DESIGN.md` before implementation.
+- Theme, radius, typography, or token changes MUST update both the implementation and `apps/desktop/DESIGN.md` in the same change.
+- Component code MUST use semantic CSS variables and Tailwind theme radius utilities from the active design system instead of hardcoded colors or numeric arbitrary radii.
 - Build a serious desktop command workbench: dense, scannable, keyboard-friendly, and operational.
 - Avoid marketing heroes, generic SaaS landing sections, glassmorphism, neon glow, gradient orbs, oversized cards, and decorative placeholder dashboards.
 - Prefer durable app surfaces: sidebars, tables, inspectors, command palettes, logs, forms, status strips, and split panes.

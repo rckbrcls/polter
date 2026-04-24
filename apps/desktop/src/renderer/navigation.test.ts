@@ -1,21 +1,36 @@
 import { describe, expect, it } from "vitest";
-import { buildSidebarSections } from "./navigation.js";
+import {
+  headerWorkflowItems,
+  systemSidebarItems,
+  workflowNavigationItems,
+} from "./navigation.js";
 
-describe("buildSidebarSections", () => {
-  it("groups desktop views into workflows, features, and system", () => {
-    const sections = buildSidebarSections([
-      { id: "database", icon: "db", label: "Database", commands: [] },
-      { id: "repo", icon: "repo", label: "Repo", commands: [] },
+describe("desktop navigation", () => {
+  it("keeps workflow surfaces as the primary numbered toolbar routes", () => {
+    expect(headerWorkflowItems).toEqual([
+      { id: "pipelines", label: "Pipelines", shortcut: 1 },
+      { id: "processes", label: "Processes", shortcut: 2 },
+      { id: "scripts", label: "Scripts", shortcut: 3 },
     ]);
+    expect(headerWorkflowItems.some((item) => item.id.startsWith("feature:"))).toBe(false);
+  });
 
-    expect(sections.map((section) => section.title)).toEqual([
-      "Workflows",
-      "Features",
-      "System",
+  it("keeps workflows as a separate navigation catalog", () => {
+    expect(workflowNavigationItems.map((item) => item.label)).toEqual([
+      "Pipelines",
+      "Processes",
+      "Scripts",
     ]);
-    expect(sections[1]?.items.map((item) => item.id)).toEqual([
-      "feature:database",
-      "feature:repo",
+  });
+
+  it("keeps system navigation as a separate footer menu catalog", () => {
+    expect(systemSidebarItems.map((item) => item.label)).toEqual([
+      "Infrastructure",
+      "Tool Status",
+      "Project Config",
+      "MCP",
+      "Skill Setup",
+      "Settings",
     ]);
   });
 });

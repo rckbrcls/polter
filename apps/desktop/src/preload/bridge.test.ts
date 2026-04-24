@@ -9,13 +9,17 @@ describe("createPolterBridge", () => {
 
     await bridge.commands.listFeatures();
     await bridge.commands.getForm("supabase:db");
+    await bridge.repositories.add("/tmp/polter");
     await bridge.processes.stop("dev-server");
 
     expect(invoke).toHaveBeenNthCalledWith(1, IPC_CHANNELS.commands.listFeatures, undefined);
     expect(invoke).toHaveBeenNthCalledWith(2, IPC_CHANNELS.commands.getForm, {
       commandId: "supabase:db",
     });
-    expect(invoke).toHaveBeenNthCalledWith(3, IPC_CHANNELS.processes.stop, {
+    expect(invoke).toHaveBeenNthCalledWith(3, IPC_CHANNELS.repositories.add, {
+      path: "/tmp/polter",
+    });
+    expect(invoke).toHaveBeenNthCalledWith(4, IPC_CHANNELS.processes.stop, {
       id: "dev-server",
     });
   });

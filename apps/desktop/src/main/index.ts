@@ -1,9 +1,6 @@
 import { app, BrowserWindow } from "electron";
 import log from "electron-log/main";
-import { registerPolterIpcHandlers } from "./ipc.js";
 import { createMainWindow } from "./window.js";
-
-let registered = false;
 
 function configureLogging() {
   log.initialize();
@@ -20,11 +17,6 @@ function configureLogging() {
 }
 
 async function bootstrap() {
-  if (!registered) {
-    registerPolterIpcHandlers();
-    registered = true;
-  }
-
   createMainWindow();
 }
 

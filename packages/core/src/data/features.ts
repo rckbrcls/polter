@@ -8,8 +8,15 @@ import { pkgCommands } from "./commands/pkg.js";
 const allSources = [...supabaseCommands, ...ghCommands, ...vercelCommands, ...gitCommands, ...pkgCommands];
 const allSourceIds = new Set(allSources.map((cmd) => cmd.id));
 
+function isProductionRuntime(): boolean {
+  return (
+    (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env
+      ?.NODE_ENV === "production"
+  );
+}
+
 function pick(ids: string[]) {
-  if (process.env.NODE_ENV !== "production") {
+  if (!isProductionRuntime()) {
     for (const id of ids) {
       if (!allSourceIds.has(id)) {
         throw new Error(`features.ts: unknown command ID "${id}". Check your feature definitions.`);
