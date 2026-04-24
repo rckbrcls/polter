@@ -14,6 +14,10 @@ colors:
   card-foreground: "#09090b"
   popover: "#ffffff"
   popover-foreground: "#09090b"
+  glass: "#ffffff"
+  glass-border: "#d4d4d8"
+  glass-row: "#f4f4f5"
+  glass-row-active: "#d4d4d8"
   primary: "#18181b"
   primary-foreground: "#fafafa"
   secondary: "#f4f4f5"
@@ -98,7 +102,7 @@ components:
     rounded: "{rounded.4xl}"
     height: 36px
   command-palette:
-    backgroundColor: "{colors.popover}"
+    backgroundColor: "{colors.glass}"
     textColor: "{colors.popover-foreground}"
     rounded: "{rounded.4xl}"
     padding: 4px
@@ -170,7 +174,7 @@ The interface should feel operational, mature, and native to long work sessions.
 
 The active renderer theme is the `radix-luma` shadcn/ui preset with `zinc` as the base color. The implementation lives in `apps/desktop/src/renderer/styles.css`, and `apps/desktop/components.json` points shadcn at that file.
 
-Use semantic CSS variables such as `--background`, `--foreground`, `--card`, `--popover`, `--primary`, `--muted`, `--accent`, `--border`, `--input`, `--ring`, and the `--sidebar-*` family. Do not introduce one-off hex, RGB, or OKLCH values in component code unless the theme file and this document are updated together.
+Use semantic CSS variables such as `--background`, `--foreground`, `--card`, `--popover`, `--primary`, `--muted`, `--accent`, `--border`, `--input`, `--ring`, the `--glass-*` family, and the `--sidebar-*` family. Do not introduce one-off hex, RGB, or OKLCH values in component code unless the theme file and this document are updated together.
 
 ## Colors
 
@@ -217,7 +221,7 @@ The active CSS values are OKLCH tokens in `styles.css`. The frontmatter keeps he
 - **Destructive:** Destructive actions and real error states only.
 - **Sidebar tokens:** Sidebar chrome and project navigation.
 
-Avoid purple gradients, blue-black drift, glass panels, translucent decorative layers, neon glow, and color variety that makes the app feel like a generic SaaS dashboard.
+Avoid purple gradients, blue-black drift, decorative translucent layers, neon glow, and color variety that makes the app feel like a generic SaaS dashboard. Glass is allowed only for functional overlays such as command palettes, menus, popovers, dialogs, sheets, and drawers, and it must use the `--glass`, `--glass-border`, `--glass-row`, and `--glass-row-active` theme tokens.
 
 ## Radius
 
@@ -244,11 +248,15 @@ Spacing is part of the theme scale. Use Tailwind spacing utilities in 4px increm
 - Inspector panes: `p-5`.
 - Tool strips: `p-3` or `p-4`, separated from scrollable content.
 
-Command palettes must keep results and search input as distinct surfaces. A single search input may sit directly in the footer without an extra wrapper card; only add a grouped footer surface when it carries multiple controls.
+Command palettes use a Raycast-style vertical layout by default: search at the top, grouped results in the middle, and a compact action footer at the bottom. Keep the list visible even before typing. Keep the commander compact, with a desktop max width around `44rem`, unless a specific command detail flow needs more room. Command detail must drill into a second plane inside the same commander with an explicit Back control; do not add a side inspector unless the product flow explicitly requires editing or previewing structured content beside the list.
+
+Commander overlays should not dim or blur the whole app canvas. Keep the page behind it visible so the glass surface reads correctly, use one clipped glass shell instead of nested opaque glass layers, and keep the modal shadow small.
 
 ## Typography
 
 Use Inter Variable as the product typeface for now because the app already imports it and the current priority is maturity and consistency. Use system monospace for command output, exact invocations, file paths, and logs.
+
+All interface typography must follow the theme scales in this file. Use `typography.body` for command rows, search inputs, buttons, and default control text; use `typography.section` for compact panel headings only; use `typography.label` for metadata, badges, group headings, and footer hints; use `typography.title` only for true top-level view titles. Do not introduce local oversized classes such as `text-2xl`, `text-xl`, or `text-lg` inside dense desktop tools unless the theme and this document are updated together.
 
 Headings stay compact. Labels may use slight positive letter spacing, but normal body text must remain at `letterSpacing: 0`. Do not scale type with viewport width.
 
@@ -277,13 +285,15 @@ The primary execution-related action from Scripts is **Stage in Processes**. Thi
 
 Creation and editing in Scripts must use a dedicated editor mode, modal, sheet, or builder-style page. Do not show the script list and a large edit form on the same surface.
 
-## Elevation And Feedback
+## Elevation, Motion, And Feedback
 
 Depth comes from borders, contrast, rings, and pane separation. Shadows exist in some shadcn primitives, but they must stay subtle and subordinate to the desktop workbench shape.
 
 Use Sonner toasts for transient success/error notifications. Do not place large persistent alert cards at the top of the main workspace for routine operations.
 
-No glassmorphism, blur-backed cards, neon glows, floating gradient objects, or decorative depth effects.
+Glass must stay operational, not decorative. Use it only on overlays and command surfaces where translucency clarifies layering. Never use glass for page sections, dashboard cards, marketing surfaces, or decorative background effects.
+
+New or changed animations MUST use `motion/react`. Prefer short opacity, scale, position, and layout animations with `prefers-reduced-motion` support. Do not add CSS-only animation behavior to active product surfaces unless it is inherited from a Radix or shadcn primitive and there is no React state transition involved.
 
 ## Components
 
@@ -313,7 +323,7 @@ Do:
 Don't:
 
 - Add generic SaaS hero blocks, feature cards, marketing copy, or decorative dashboards.
-- Use gradient orbs, glass panels, heavy shadows, neon glow, or bokeh backgrounds.
+- Use gradient orbs, decorative glass panels, heavy shadows, neon glow, or bokeh backgrounds.
 - Hide operational state behind oversized cards.
 - Add visual effects that make logs, paths, commands, or errors harder to read.
 - Create custom styling that bypasses these tokens without updating this file.

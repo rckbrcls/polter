@@ -35,6 +35,10 @@
     --color-primary: var(--primary);
     --color-popover-foreground: var(--popover-foreground);
     --color-popover: var(--popover);
+    --color-glass-row-active: var(--glass-row-active);
+    --color-glass-row: var(--glass-row);
+    --color-glass-border: var(--glass-border);
+    --color-glass: var(--glass);
     --color-card-foreground: var(--card-foreground);
     --color-card: var(--card);
     --color-foreground: var(--foreground);
@@ -68,6 +72,10 @@
     --border: oklch(0.922 0 0);
     --input: oklch(0.922 0 0);
     --ring: oklch(0.708 0 0);
+    --glass: oklch(1 0 0 / 48%);
+    --glass-border: oklch(0.8 0 0 / 46%);
+    --glass-row: oklch(1 0 0 / 34%);
+    --glass-row-active: oklch(0.8 0 0 / 42%);
     --chart-1: oklch(0.87 0 0);
     --chart-2: oklch(0.556 0 0);
     --chart-3: oklch(0.439 0 0);
@@ -103,6 +111,10 @@
     --border: oklch(1 0 0 / 10%);
     --input: oklch(1 0 0 / 15%);
     --ring: oklch(0.556 0 0);
+    --glass: oklch(0.205 0 0 / 56%);
+    --glass-border: oklch(1 0 0 / 18%);
+    --glass-row: oklch(1 0 0 / 8%);
+    --glass-row-active: oklch(1 0 0 / 18%);
     --chart-1: oklch(0.87 0 0);
     --chart-2: oklch(0.556 0 0);
     --chart-3: oklch(0.439 0 0);
@@ -128,4 +140,20 @@
   html {
     @apply font-sans;
     }
+}
+
+@layer utilities {
+  .commander-glass-shell {
+    -webkit-backdrop-filter: blur(24px) saturate(1.35);
+    backdrop-filter: blur(24px) saturate(1.35);
+    box-shadow:
+      0 14px 36px oklch(0 0 0 / 14%),
+      inset 0 1px 0 oklch(1 0 0 / 38%);
+  }
+
+  .dark .commander-glass-shell {
+    box-shadow:
+      0 14px 36px oklch(0 0 0 / 38%),
+      inset 0 1px 0 oklch(1 0 0 / 10%);
+  }
 }

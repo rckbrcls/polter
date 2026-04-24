@@ -23,7 +23,7 @@ function Command({
     <CommandPrimitive
       data-slot="command"
       className={cn(
-        "flex size-full flex-col overflow-hidden rounded-[inherit] bg-popover p-1 text-popover-foreground",
+        "flex size-full flex-col overflow-hidden rounded-[inherit] bg-glass p-1 text-popover-foreground supports-backdrop-filter:backdrop-blur-xl",
         className
       )}
       {...props}
@@ -36,12 +36,14 @@ function CommandDialog({
   description = "Search for a command to run...",
   children,
   className,
+  overlayClassName,
   showCloseButton = false,
   ...props
 }: React.ComponentProps<typeof Dialog> & {
   title?: string
   description?: string
   className?: string
+  overlayClassName?: string
   showCloseButton?: boolean
 }) {
   return (
@@ -52,9 +54,10 @@ function CommandDialog({
       </DialogHeader>
       <DialogContent
         className={cn(
-          "top-1/3 translate-y-0 overflow-hidden rounded-4xl! p-0",
+          "top-1/3 translate-y-0 overflow-hidden rounded-4xl! border-glass-border bg-glass p-0 shadow-md ring-1 ring-glass-border supports-backdrop-filter:backdrop-blur-xl",
           className
         )}
+        overlayClassName={overlayClassName}
         showCloseButton={showCloseButton}
       >
         {children}

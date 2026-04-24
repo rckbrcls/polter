@@ -75,7 +75,7 @@ export function App(): JSX.Element {
         getSidebarBadge={workbench.getSidebarBadge}
         headerItems={workbench.headerItems}
         onAddRepository={() => void workbench.addRepositoryFromPicker()}
-        onOpenCommander={() => setCommanderOpen(true)}
+        onOpenCommander={() => setCommanderOpen((current) => !current)}
         onRemoveRepository={(repository) => void workbench.removeRepository(repository)}
         onSelectRepository={(repository) => void workbench.selectRepository(repository)}
         onSelectView={workbench.setSelectedView}
