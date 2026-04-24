@@ -287,7 +287,7 @@ Creation and editing in Scripts must use a dedicated editor mode, modal, sheet, 
 
 ## Elevation, Motion, And Feedback
 
-Depth comes from borders, contrast, rings, and pane separation. Shadows exist in some shadcn primitives, but they must stay subtle and subordinate to the desktop workbench shape.
+Depth comes from borders, contrast, pane separation, and rings outside form controls. Shadows exist in some shadcn primitives, but they must stay subtle and subordinate to the desktop workbench shape.
 
 Use Sonner toasts for transient success/error notifications. Do not place large persistent alert cards at the top of the main workspace for routine operations.
 
@@ -300,7 +300,7 @@ New or changed animations MUST use `motion/react`. Prefer short opacity, scale, 
 Primary components should support repeated professional use:
 
 - **Command lists:** Dense rows, clear active state, visible keyboard focus.
-- **Forms:** Left-aligned labels, compact descriptions, explicit validation.
+- **Forms:** Left-aligned labels, compact descriptions, explicit validation, and no focus rings.
 - **Logs and output:** Monospace, scrollable, copy-friendly, stable height.
 - **Tables:** Scannable columns, sticky context where useful, no decorative cards.
 - **Status surfaces:** Calm text first, color second, icons only when they reduce scanning time.
@@ -308,6 +308,8 @@ Primary components should support repeated professional use:
 - **Project sidebar:** Stores local visual preferences, such as display name, icon, and icon tone, as desktop UI preferences rather than repository metadata.
 
 Use `shadcn/ui` and Radix primitives as implementation tools, but tune them back to this desktop workbench direction.
+
+Inputs and form controls must never draw focus rings anywhere in the app. This includes text inputs, textareas, selects, comboboxes, OTP slots, checkboxes, radios, switches, and sliders. Invalid states may use destructive borders or color, but they must not add `ring-*`, focus-ring, validation-ring, or box-shadow halo styling to fields.
 
 ## Do's And Don'ts
 
