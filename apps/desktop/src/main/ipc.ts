@@ -3,6 +3,13 @@ import { IPC_CHANNELS } from "../shared/ipc.js";
 
 type Handler = (event: IpcMainInvokeEvent, payload?: unknown) => unknown | Promise<unknown>;
 
+export interface PolterIpcControllers {
+  commander?: {
+    hideOverlay(): void;
+    showMainWindow(): void;
+  };
+}
+
 function collectChannels(value: unknown): string[] {
   if (typeof value === "string") {
     return [value];
@@ -21,14 +28,30 @@ function createUiOnlyHandler(channel: string): Handler {
   };
 }
 
-export function createPolterIpcHandlers(): Record<string, Handler> {
-  return Object.fromEntries(
+export function createPolterIpcHandlers(
+  controllers: PolterIpcControllers = {},
+): Record<string, Handler> {
+  const handlers = Object.fromEntries(
     collectChannels(IPC_CHANNELS).map((channel) => [channel, createUiOnlyHandler(channel)]),
   );
+
+  if (controllers.commander) {
+    handlers[IPC_CHANNELS.commander.hideOverlay] = async () => {
+      controllers.commander?.hideOverlay();
+    };
+    handlers[IPC_CHANNELS.commander.showMainWindow] = async () => {
+      controllers.commander?.showMainWindow();
+    };
+  }
+
+  return handlers;
 }
 
-export function registerPolterIpcHandlers(target: Pick<IpcMain, "handle"> = ipcMain) {
-  const handlers = createPolterIpcHandlers();
+export function registerPolterIpcHandlers(
+  controllers: PolterIpcControllers = {},
+  target: Pick<IpcMain, "handle"> = ipcMain,
+) {
+  const handlers = createPolterIpcHandlers(controllers);
   for (const [channel, handler] of Object.entries(handlers)) {
     target.handle(channel, handler);
   }

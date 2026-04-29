@@ -139,10 +139,38 @@
     }
   html {
     @apply font-sans;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
     }
 }
 
 @layer utilities {
+  html[data-surface="commander"],
+  html[data-surface="commander"] body,
+  html[data-surface="commander"] #root {
+    background: transparent;
+  }
+
+  html[data-surface="commander"] {
+    --glass: var(--popover);
+    --glass-border: var(--border);
+    --glass-row: var(--muted);
+    --glass-row-active: var(--accent);
+  }
+
+  .commander-overlay-root {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    width: 100vw;
+    background: transparent;
+  }
+
+  .commander-overlay-root [data-slot="command-list"] {
+    height: 24rem !important;
+  }
+
   .commander-glass-shell {
     -webkit-backdrop-filter: blur(24px) saturate(1.35);
     backdrop-filter: blur(24px) saturate(1.35);

@@ -11,6 +11,7 @@ describe("createPolterBridge", () => {
     await bridge.commands.getForm("supabase:db");
     await bridge.repositories.add("/tmp/polter");
     await bridge.processes.stop("dev-server");
+    await bridge.commander.hideOverlay();
 
     expect(invoke).toHaveBeenNthCalledWith(1, IPC_CHANNELS.commands.listFeatures, undefined);
     expect(invoke).toHaveBeenNthCalledWith(2, IPC_CHANNELS.commands.getForm, {
@@ -22,5 +23,27 @@ describe("createPolterBridge", () => {
     expect(invoke).toHaveBeenNthCalledWith(4, IPC_CHANNELS.processes.stop, {
       id: "dev-server",
     });
+    expect(invoke).toHaveBeenNthCalledWith(5, IPC_CHANNELS.commander.hideOverlay, undefined);
+  });
+
+  it("subscribes to Commander focus events and returns an unsubscribe function", () => {
+    const invoke = vi.fn().mockResolvedValue([]);
+    const listeners = new Map<string, (...args: unknown[]) => void>();
+    const on = vi.fn((channel: string, listener: (...args: unknown[]) => void) => {
+      listeners.set(channel, listener);
+    });
+    const removeListener = vi.fn();
+    const bridge = createPolterBridge({ invoke, on, removeListener });
+    const callback = vi.fn();
+
+    const unsubscribe = bridge.commander.onFocusSearch(callback);
+    listeners.get("commander:focus-search")?.();
+    unsubscribe();
+
+    expect(callback).toHaveBeenCalledOnce();
+    expect(removeListener).toHaveBeenCalledWith(
+      "commander:focus-search",
+      listeners.get("commander:focus-search"),
+    );
   });
 });

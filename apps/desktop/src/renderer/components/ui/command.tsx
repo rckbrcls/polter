@@ -54,7 +54,7 @@ function CommandDialog({
       </DialogHeader>
       <DialogContent
         className={cn(
-          "top-1/3 translate-y-0 overflow-hidden rounded-4xl! border-glass-border bg-glass p-0 shadow-md ring-1 ring-glass-border supports-backdrop-filter:backdrop-blur-xl",
+          "top-1/3 translate-y-0 p-0",
           className
         )}
         overlayClassName={overlayClassName}

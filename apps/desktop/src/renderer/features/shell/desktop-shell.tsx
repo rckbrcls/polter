@@ -101,13 +101,14 @@ export function DesktopShell({
   return (
     <div className="app-shell-surface">
       <SidebarProvider defaultOpen className="app-shell-provider">
-        <div className="app-shell-body">
-          <Sidebar collapsible="icon" variant="sidebar" className="app-shell-sidebar">
-            <div className="flex h-12 shrink-0 items-center border-b border-sidebar-border px-2 group-data-[collapsible=icon]:justify-center">
-              <SidebarTrigger className="size-8 shrink-0" />
-            </div>
+        <div className="app-window-sidebar-trigger px-3">
+          <div className="app-window-traffic-spacer" aria-hidden="true" />
+          <SidebarTrigger className="size-8 shrink-0" />
+        </div>
 
-            <SidebarContent className="pt-2">
+        <div className="app-shell-body">
+          <Sidebar collapsible="offcanvas" variant="sidebar" className="app-shell-sidebar">
+            <SidebarContent className="app-shell-sidebar-content">
               <RepositorySidebar
                 activeRepositoryPath={activeRepositoryPath}
                 onAddRepository={onAddRepository}
@@ -133,8 +134,8 @@ export function DesktopShell({
                   </button>
                 </HoverCardTrigger>
                 <HoverCardContent
-                  side="right"
-                  align="end"
+                  side="top"
+                  align="start"
                   sideOffset={8}
                   className="app-system-menu w-64 rounded-lg border border-border bg-popover p-1.5 text-popover-foreground shadow-none ring-0"
                 >
@@ -173,11 +174,11 @@ export function DesktopShell({
           </Sidebar>
 
           <SidebarInset className="app-shell-main">
-            <div className="app-shell-toolbar border-b border-border bg-background px-4 md:px-6">
-              <div className="flex h-full min-w-0 items-center gap-3">
+            <div className="app-shell-content-header border-b border-border bg-background px-4 md:px-6">
+              <div className="app-shell-content-header-actions flex min-w-0 items-center justify-end gap-2">
                 <nav
                   aria-label="Workflow routes"
-                  className="no-scrollbar flex min-w-0 flex-1 items-center gap-1 overflow-x-auto"
+                  className="no-scrollbar flex min-w-0 shrink items-center gap-1 overflow-x-auto"
                 >
                   {headerItems.map((item) => {
                     const Icon = getViewIcon(item.id);
@@ -212,7 +213,7 @@ export function DesktopShell({
                     <button
                       type="button"
                       aria-label="Commander"
-                      className="app-header-nav-button ml-auto flex size-8 shrink-0 items-center justify-center rounded-md border border-border/70 bg-muted/20 text-muted-foreground outline-hidden transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                      className="app-header-nav-button flex size-8 shrink-0 items-center justify-center rounded-md border border-border/70 bg-muted/20 text-muted-foreground outline-hidden transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring"
                       onClick={onOpenCommander}
                     >
                       <SearchIcon className="size-3.5 shrink-0" />

@@ -1,8 +1,14 @@
-import { app, BrowserWindow, shell } from "electron";
+import { app, BrowserWindow, screen, shell } from "electron";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { IPC_EVENTS } from "../shared/ipc.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const COMMANDER_WINDOW_WIDTH = 704;
+const COMMANDER_WINDOW_HEIGHT = 490;
+
+let mainWindow: BrowserWindow | null = null;
+let commanderWindow: BrowserWindow | null = null;
 
 function canOpenExternalUrl(rawUrl: string): boolean {
   try {
@@ -13,24 +19,31 @@ function canOpenExternalUrl(rawUrl: string): boolean {
   }
 }
 
-export function createMainWindow(): BrowserWindow {
-  const window = new BrowserWindow({
-    width: 1440,
-    height: 920,
-    minWidth: 1180,
-    minHeight: 760,
-    title: "Polter Desktop",
-    backgroundColor: "#0d1117",
-    show: false,
-    webPreferences: {
-      preload: join(__dirname, "../preload/index.cjs"),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: true,
-      webSecurity: true,
-    },
-  });
+function getPackagedRendererUrl(): URL {
+  return pathToFileURL(join(__dirname, "../renderer/index.html"));
+}
 
+function isAllowedRendererUrl(rawUrl: string): boolean {
+  try {
+    const currentUrl = new URL(rawUrl);
+    const rendererUrl = process.env["ELECTRON_RENDERER_URL"];
+
+    if (!app.isPackaged && rendererUrl) {
+      const expectedUrl = new URL(rendererUrl);
+      return currentUrl.origin === expectedUrl.origin && currentUrl.pathname === expectedUrl.pathname;
+    }
+
+    const packagedRendererUrl = getPackagedRendererUrl();
+    return (
+      currentUrl.protocol === packagedRendererUrl.protocol &&
+      currentUrl.pathname === packagedRendererUrl.pathname
+    );
+  } catch {
+    return false;
+  }
+}
+
+function configureWindowSecurity(window: BrowserWindow): void {
   window.webContents.session.setPermissionRequestHandler((_webContents, _permission, callback) => {
     callback(false);
   });
@@ -44,12 +57,7 @@ export function createMainWindow(): BrowserWindow {
   });
 
   window.webContents.on("will-navigate", (event, url) => {
-    const isDevelopmentRenderer =
-      !app.isPackaged && url === process.env["ELECTRON_RENDERER_URL"];
-    const isPackagedRenderer =
-      url === pathToFileURL(join(__dirname, "../renderer/index.html")).toString();
-
-    if (isDevelopmentRenderer || isPackagedRenderer) {
+    if (isAllowedRendererUrl(url)) {
       return;
     }
 
@@ -59,17 +67,180 @@ export function createMainWindow(): BrowserWindow {
       void shell.openExternal(url);
     }
   });
+}
+
+function loadRenderer(window: BrowserWindow, surface?: "commander"): void {
+  const rendererUrl = process.env["ELECTRON_RENDERER_URL"];
+
+  if (!app.isPackaged && rendererUrl) {
+    const url = new URL(rendererUrl);
+    if (surface) {
+      url.searchParams.set("surface", surface);
+    }
+    void window.loadURL(url.toString());
+    return;
+  }
+
+  void window.loadFile(join(__dirname, "../renderer/index.html"), {
+    search: surface ? `surface=${surface}` : undefined,
+  });
+}
+
+export function createMainWindow(): BrowserWindow {
+  const window = new BrowserWindow({
+    width: 1440,
+    height: 920,
+    minWidth: 1180,
+    minHeight: 760,
+    title: "Polter Desktop",
+    titleBarStyle: "hidden",
+    ...(process.platform !== "darwin" ? { titleBarOverlay: true } : {}),
+    backgroundColor: "#0d1117",
+    show: false,
+    webPreferences: {
+      preload: join(__dirname, "../preload/index.cjs"),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+      webSecurity: true,
+    },
+  });
+
+  mainWindow = window;
+  configureWindowSecurity(window);
 
   window.once("ready-to-show", () => {
     window.show();
   });
 
-  const rendererUrl = process.env["ELECTRON_RENDERER_URL"];
-  if (!app.isPackaged && rendererUrl) {
-    void window.loadURL(rendererUrl);
-  } else {
-    void window.loadFile(join(__dirname, "../renderer/index.html"));
+  window.on("closed", () => {
+    if (mainWindow === window) {
+      mainWindow = null;
+    }
+
+    if (process.platform !== "darwin") {
+      app.quit();
+    }
+  });
+
+  loadRenderer(window);
+  return window;
+}
+
+export function getMainWindow(): BrowserWindow | null {
+  return mainWindow && !mainWindow.isDestroyed() ? mainWindow : null;
+}
+
+function centerCommanderWindow(window: BrowserWindow): void {
+  const cursorPoint = screen.getCursorScreenPoint();
+  const display = screen.getDisplayNearestPoint(cursorPoint);
+  const { height, width, x, y } = display.workArea;
+  const nextX = Math.round(x + (width - COMMANDER_WINDOW_WIDTH) / 2);
+  const nextY = Math.round(y + Math.max(32, (height - COMMANDER_WINDOW_HEIGHT) * 0.18));
+
+  window.setBounds({
+    x: nextX,
+    y: nextY,
+    width: COMMANDER_WINDOW_WIDTH,
+    height: COMMANDER_WINDOW_HEIGHT,
+  });
+}
+
+function focusCommanderSearch(window: BrowserWindow): void {
+  window.webContents.send(IPC_EVENTS.commander.focusSearch);
+}
+
+function showAndFocusCommanderWindow(window: BrowserWindow): void {
+  centerCommanderWindow(window);
+  window.show();
+  window.focus();
+  focusCommanderSearch(window);
+}
+
+export function createCommanderWindow(): BrowserWindow {
+  const window = new BrowserWindow({
+    width: COMMANDER_WINDOW_WIDTH,
+    height: COMMANDER_WINDOW_HEIGHT,
+    show: false,
+    frame: false,
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    transparent: true,
+    hasShadow: false,
+    backgroundColor: "#00000000",
+    webPreferences: {
+      preload: join(__dirname, "../preload/index.cjs"),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+      webSecurity: true,
+    },
+  });
+
+  commanderWindow = window;
+  configureWindowSecurity(window);
+  window.setAlwaysOnTop(true, "floating");
+
+  window.on("blur", () => {
+    window.hide();
+  });
+
+  window.on("closed", () => {
+    if (commanderWindow === window) {
+      commanderWindow = null;
+    }
+  });
+
+  loadRenderer(window, "commander");
+  return window;
+}
+
+export function getCommanderWindow(): BrowserWindow | null {
+  return commanderWindow && !commanderWindow.isDestroyed() ? commanderWindow : null;
+}
+
+export function hideCommanderWindow(): void {
+  getCommanderWindow()?.hide();
+}
+
+export function showCommanderWindow(): void {
+  const window = getCommanderWindow() ?? createCommanderWindow();
+
+  if (window.webContents.isLoading()) {
+    window.webContents.once("did-finish-load", () => {
+      if (!window.isDestroyed()) {
+        showAndFocusCommanderWindow(window);
+      }
+    });
+    return;
   }
 
+  showAndFocusCommanderWindow(window);
+}
+
+export function toggleCommanderWindow(): void {
+  const window = getCommanderWindow();
+
+  if (window?.isVisible()) {
+    window.hide();
+    return;
+  }
+
+  showCommanderWindow();
+}
+
+export function showMainWindow(): BrowserWindow {
+  const window = getMainWindow() ?? createMainWindow();
+
+  if (window.isMinimized()) {
+    window.restore();
+  }
+
+  window.show();
+  window.focus();
   return window;
 }

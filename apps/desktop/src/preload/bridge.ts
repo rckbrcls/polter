@@ -24,15 +24,35 @@ import type {
   SkillSetupResult,
   StatusResult,
 } from "@polterware/core";
-import { IPC_CHANNELS } from "../shared/ipc.js";
+import { IPC_CHANNELS, IPC_EVENTS } from "../shared/ipc.js";
 
 export interface IpcInvokeLike {
   invoke(channel: string, payload?: unknown): Promise<unknown>;
 }
 
+export interface IpcEventLike extends IpcInvokeLike {
+  on?(channel: string, listener: (...args: unknown[]) => void): unknown;
+  removeListener?(channel: string, listener: (...args: unknown[]) => void): unknown;
+}
+
 function createInvoker(ipc: IpcInvokeLike) {
   return function invoke<T>(channel: string, payload?: unknown) {
     return ipc.invoke(channel, payload) as Promise<T>;
+  };
+}
+
+function createEventSubscriber(ipc: IpcEventLike) {
+  return function subscribe(channel: string, callback: () => void): () => void {
+    if (!ipc.on || !ipc.removeListener) {
+      return () => {};
+    }
+
+    const listener = () => callback();
+    ipc.on(channel, listener);
+
+    return () => {
+      ipc.removeListener?.(channel, listener);
+    };
   };
 }
 
@@ -93,10 +113,16 @@ export interface PolterBridge {
     preview(): Promise<DesktopSkillPreview>;
     setup(): Promise<SkillSetupResult>;
   };
+  commander: {
+    hideOverlay(): Promise<void>;
+    showMainWindow(): Promise<void>;
+    onFocusSearch(callback: () => void): () => void;
+  };
 }
 
-export function createPolterBridge(ipc: IpcInvokeLike): PolterBridge {
+export function createPolterBridge(ipc: IpcEventLike): PolterBridge {
   const invoke = createInvoker(ipc);
+  const subscribe = createEventSubscriber(ipc);
 
   return {
     app: {
@@ -159,6 +185,11 @@ export function createPolterBridge(ipc: IpcInvokeLike): PolterBridge {
     skills: {
       preview: () => invoke(IPC_CHANNELS.skills.preview),
       setup: () => invoke(IPC_CHANNELS.skills.setup),
+    },
+    commander: {
+      hideOverlay: () => invoke(IPC_CHANNELS.commander.hideOverlay),
+      showMainWindow: () => invoke(IPC_CHANNELS.commander.showMainWindow),
+      onFocusSearch: (callback) => subscribe(IPC_EVENTS.commander.focusSearch, callback),
     },
   };
 }

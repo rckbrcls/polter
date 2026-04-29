@@ -170,6 +170,12 @@ Polter Desktop is a serious command workbench for developers who need to inspect
 
 The interface should feel operational, mature, and native to long work sessions. It is not a marketing surface. It should privilege density, hierarchy, keyboard movement, readable logs, and predictable panes over decorative presentation.
 
+## Window Chrome
+
+The desktop window uses split custom chrome. Electron hides the native title bar while preserving native window controls. The sidebar toggle stays pinned beside the native window controls, while workflow route icons and Commander access live in the content panel header.
+
+Chrome regions must stay dense and operational. Use semantic background, foreground, border, and muted tokens only. Header surfaces are draggable window regions, while buttons, inputs, menus, and other interactive elements inside them must explicitly opt out with `app-region: no-drag` and `-webkit-app-region: no-drag`. The sidebar closes completely instead of collapsing to an icon rail, and the shell background uses the sidebar color so the rounded main content panel reads as floating over the desktop chrome plane with a subtle theme border and shadow.
+
 ## Theme Source
 
 The active renderer theme is the `radix-luma` shadcn/ui preset with `zinc` as the base color. The implementation lives in `apps/desktop/src/renderer/styles.css`, and `apps/desktop/components.json` points shadcn at that file.
@@ -252,9 +258,17 @@ Command palettes use a Raycast-style vertical layout by default: search at the t
 
 Commander overlays should not dim or blur the whole app canvas. Keep the page behind it visible so the glass surface reads correctly, use one clipped glass shell instead of nested opaque glass layers, and keep the modal shadow small.
 
+## Modal Dialogs
+
+All central modal dialogs and alert dialogs follow the Commander overlay pattern. They use one clipped glass shell with `--glass`, `--glass-border`, a subtle ring, `rounded-4xl`, compact padding, and the same short fade plus zoom open/close animation. Do not create local dialog animation variants unless this document and the shared primitive are updated together.
+
+Dialogs must not dim, darken, or blur the whole app canvas. The overlay stays visually transparent so the workspace remains visible behind the focused surface. Dialogs also do not show a close X by default; use explicit actions such as Cancel, Save, Delete, or Reset, while preserving Escape and outside-click dismissal when the interaction allows it.
+
+Sheets and drawers are separate edge surfaces and may keep their directional slide behavior. This modal rule applies to centered dialogs, command-style dialogs, and alert dialogs.
+
 ## Typography
 
-Use Inter Variable as the product typeface for now because the app already imports it and the current priority is maturity and consistency. Use system monospace for command output, exact invocations, file paths, and logs.
+Use Inter Variable as the product typeface for now because the app already imports it and the current priority is maturity and consistency. Use system monospace for command output, exact invocations, file paths, and logs. Renderer typography must use global font smoothing through `-webkit-font-smoothing: antialiased`, `-moz-osx-font-smoothing: grayscale`, and `text-rendering: optimizeLegibility`.
 
 All interface typography must follow the theme scales in this file. Use `typography.body` for command rows, search inputs, buttons, and default control text; use `typography.section` for compact panel headings only; use `typography.label` for metadata, badges, group headings, and footer hints; use `typography.title` only for true top-level view titles. Do not introduce local oversized classes such as `text-2xl`, `text-xl`, or `text-lg` inside dense desktop tools unless the theme and this document are updated together.
 

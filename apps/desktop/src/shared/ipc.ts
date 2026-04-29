@@ -55,6 +55,18 @@ export const IPC_CHANNELS = {
     preview: "skills:preview",
     setup: "skills:setup",
   },
+  commander: {
+    hideOverlay: "commander:hide-overlay",
+    showMainWindow: "commander:show-main-window",
+  },
 } as const;
 
 export type IpcChannelTree = typeof IPC_CHANNELS;
+
+export const IPC_EVENTS = {
+  commander: {
+    focusSearch: "commander:focus-search",
+  },
+} as const;
+
+export type IpcEventTree = typeof IPC_EVENTS;

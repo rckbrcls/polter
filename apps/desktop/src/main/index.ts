@@ -1,6 +1,16 @@
-import { app, BrowserWindow } from "electron";
+import { app, globalShortcut } from "electron";
 import log from "electron-log/main";
-import { createMainWindow } from "./window.js";
+import { registerGlobalCommanderShortcut } from "./global-shortcuts.js";
+import { registerPolterIpcHandlers } from "./ipc.js";
+import {
+  createMainWindow,
+  getMainWindow,
+  hideCommanderWindow,
+  showMainWindow,
+  toggleCommanderWindow,
+} from "./window.js";
+
+let unregisterCommanderShortcut: (() => void) | undefined;
 
 function configureLogging() {
   log.initialize();
@@ -17,7 +27,19 @@ function configureLogging() {
 }
 
 async function bootstrap() {
+  registerPolterIpcHandlers({
+    commander: {
+      hideOverlay: hideCommanderWindow,
+      showMainWindow,
+    },
+  });
+
   createMainWindow();
+  unregisterCommanderShortcut = registerGlobalCommanderShortcut({
+    log,
+    onToggleCommander: toggleCommanderWindow,
+    shortcuts: globalShortcut,
+  });
 }
 
 configureLogging();
@@ -28,9 +50,16 @@ app.whenReady().then(bootstrap).catch((error) => {
 });
 
 app.on("activate", () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
+  if (!getMainWindow()) {
     createMainWindow();
+    return;
   }
+
+  showMainWindow();
+});
+
+app.on("will-quit", () => {
+  unregisterCommanderShortcut?.();
 });
 
 app.on("window-all-closed", () => {

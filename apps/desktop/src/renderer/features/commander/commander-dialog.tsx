@@ -433,6 +433,30 @@ export function CommanderDialog({
   open: boolean;
   workbench: Workbench;
 }): JSX.Element {
+  return (
+    <CommandDialogPrimitive
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Commander"
+      description="Search commands, pipelines, scripts, projects, and processes."
+      className="top-[10vh] w-[min(calc(100vw-2rem),44rem)] max-w-none sm:max-w-none"
+    >
+      <CommanderPanel open={open} onOpenChange={onOpenChange} workbench={workbench} />
+    </CommandDialogPrimitive>
+  );
+}
+
+export function CommanderPanel({
+  onOpenChange,
+  onRequestMainWindow,
+  open,
+  workbench,
+}: {
+  onOpenChange: (open: boolean) => void;
+  onRequestMainWindow?: () => void;
+  open: boolean;
+  workbench: Workbench;
+}): JSX.Element {
   const reducedMotion = Boolean(useReducedMotion());
   const documents = useMemo(
     () =>
@@ -567,6 +591,7 @@ export function CommanderDialog({
       commandFlags,
       commandForm.command.label,
     );
+    onRequestMainWindow?.();
     onOpenChange(false);
   }
 
@@ -583,12 +608,14 @@ export function CommanderDialog({
     if (document.kind === "pipeline" && document.pipelineName) {
       workbench.setSelectedView("pipelines");
       await workbench.runPipelineByName(document.pipelineName);
+      onRequestMainWindow?.();
       onOpenChange(false);
       return;
     }
 
     if (document.kind === "script" && document.commandValue) {
       workbench.stageProcessCommand(document.commandValue);
+      onRequestMainWindow?.();
       onOpenChange(false);
       return;
     }
@@ -600,6 +627,7 @@ export function CommanderDialog({
 
       if (repository) {
         await workbench.selectRepository(repository);
+        onRequestMainWindow?.();
         onOpenChange(false);
       }
       return;
@@ -608,99 +636,91 @@ export function CommanderDialog({
     if (document.kind === "process" && document.processId) {
       workbench.setSelectedProcessId(document.processId);
       workbench.setSelectedView("processes");
+      onRequestMainWindow?.();
       onOpenChange(false);
     }
   }
 
   return (
-    <CommandDialogPrimitive
-      open={open}
-      onOpenChange={onOpenChange}
-      title="Commander"
-      description="Search commands, pipelines, scripts, projects, and processes."
-      overlayClassName="bg-transparent supports-backdrop-filter:backdrop-blur-none"
-      className="commander-glass-shell top-[10vh] w-[min(calc(100vw-2rem),44rem)] max-w-none overflow-hidden rounded-4xl! border border-glass-border bg-glass p-0 shadow-none ring-1 ring-glass-border sm:max-w-none"
+    <Command
+      shouldFilter={false}
+      loop
+      value={selectedDocument?.id ?? ""}
+      onValueChange={(value) => {
+        setSelectedDocumentId(value);
+      }}
+      className="h-auto! max-h-none min-h-0 overflow-hidden rounded-[inherit] border-0 bg-transparent p-0 text-popover-foreground shadow-none ring-0"
     >
-      <Command
-        shouldFilter={false}
-        loop
-        value={selectedDocument?.id ?? ""}
-        onValueChange={(value) => {
-          setSelectedDocumentId(value);
-        }}
-        className="h-auto! max-h-none min-h-0 overflow-hidden rounded-[inherit] border-0 bg-transparent p-0 text-popover-foreground shadow-none ring-0"
+      <motion.div
+        initial={reducedMotion ? false : { opacity: 0, y: -10, scale: 0.985 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: reducedMotion ? 0 : 0.18, ease: commanderEase }}
+        className="flex min-h-0 flex-col"
       >
-        <motion.div
-          initial={reducedMotion ? false : { opacity: 0, y: -10, scale: 0.985 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: reducedMotion ? 0 : 0.18, ease: commanderEase }}
-          className="flex min-h-0 flex-col"
-        >
-          <AnimatePresence initial={false} mode="wait">
-            {plane === "list" ? (
-              <motion.div
-                key="commander-list"
-                initial={reducedMotion ? false : { opacity: 0, x: -24 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={reducedMotion ? { opacity: 0 } : { opacity: 0, x: -24 }}
-                transition={{ duration: reducedMotion ? 0 : 0.18, ease: commanderEase }}
-                className="flex min-h-0 flex-col"
-              >
-                <CommanderSearchInput searchTerm={searchTerm} onSearchTermChange={setSearchTerm} />
-                <CommandList className="h-[min(62vh,34rem)] max-h-none px-3 py-2">
-                  <CommandEmpty>No results found.</CommandEmpty>
-                  <AnimatePresence initial={false}>
-                    {groups.map((group) => (
-                      <motion.div
-                        key={group.id}
-                        layout={reducedMotion ? false : "position"}
-                        initial={reducedMotion ? false : { opacity: 0, y: 6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -6 }}
-                        transition={{ duration: reducedMotion ? 0 : 0.14, ease: commanderEase }}
+        <AnimatePresence initial={false} mode="wait">
+          {plane === "list" ? (
+            <motion.div
+              key="commander-list"
+              initial={reducedMotion ? false : { opacity: 0, x: -24 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={reducedMotion ? { opacity: 0 } : { opacity: 0, x: -24 }}
+              transition={{ duration: reducedMotion ? 0 : 0.18, ease: commanderEase }}
+              className="flex min-h-0 flex-col"
+            >
+              <CommanderSearchInput searchTerm={searchTerm} onSearchTermChange={setSearchTerm} />
+              <CommandList className="h-[min(62vh,34rem)] max-h-none px-3 py-2">
+                <CommandEmpty>No results found.</CommandEmpty>
+                <AnimatePresence initial={false}>
+                  {groups.map((group) => (
+                    <motion.div
+                      key={group.id}
+                      layout={reducedMotion ? false : "position"}
+                      initial={reducedMotion ? false : { opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -6 }}
+                      transition={{ duration: reducedMotion ? 0 : 0.14, ease: commanderEase }}
+                    >
+                      <CommandGroup
+                        heading={group.label}
+                        className="p-0 pb-2 **:[[cmdk-group-heading]]:px-1 **:[[cmdk-group-heading]]:py-2 **:[[cmdk-group-heading]]:text-xs **:[[cmdk-group-heading]]:font-semibold **:[[cmdk-group-heading]]:tracking-normal **:[[cmdk-group-heading]]:text-muted-foreground"
                       >
-                        <CommandGroup
-                          heading={group.label}
-                          className="p-0 pb-2 **:[[cmdk-group-heading]]:px-1 **:[[cmdk-group-heading]]:py-2 **:[[cmdk-group-heading]]:text-xs **:[[cmdk-group-heading]]:font-semibold **:[[cmdk-group-heading]]:tracking-normal **:[[cmdk-group-heading]]:text-muted-foreground"
-                        >
-                          {group.documents.map((document) => (
-                            <CommanderRow
-                              key={document.id}
-                              document={document}
-                              reducedMotion={reducedMotion}
-                              selected={selectedDocument?.id === document.id}
-                              onSelect={() => setSelectedDocumentId(document.id)}
-                              onRun={() => void runPrimaryAction(document)}
-                            />
-                          ))}
-                        </CommandGroup>
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-                </CommandList>
-                <CommanderFooter
-                  document={selectedDocument}
-                  reducedMotion={reducedMotion}
-                  onPrimaryAction={() => void runPrimaryAction(selectedDocument)}
-                />
-              </motion.div>
-            ) : (
-              <CommanderCommandDetail
-                commandArgsText={commandArgsText}
-                commandFlags={commandFlags}
-                commandForm={commandForm}
-                executionOutput={executionOutput}
+                        {group.documents.map((document) => (
+                          <CommanderRow
+                            key={document.id}
+                            document={document}
+                            reducedMotion={reducedMotion}
+                            selected={selectedDocument?.id === document.id}
+                            onSelect={() => setSelectedDocumentId(document.id)}
+                            onRun={() => void runPrimaryAction(document)}
+                          />
+                        ))}
+                      </CommandGroup>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </CommandList>
+              <CommanderFooter
+                document={selectedDocument}
                 reducedMotion={reducedMotion}
-                onAddToPipeline={addDetailCommandToPipeline}
-                onBack={backToList}
-                onRun={() => void runDetailCommand()}
-                setCommandArgsText={setCommandArgsText}
-                setCommandFlags={setCommandFlags}
+                onPrimaryAction={() => void runPrimaryAction(selectedDocument)}
               />
-            )}
-          </AnimatePresence>
-        </motion.div>
-      </Command>
-    </CommandDialogPrimitive>
+            </motion.div>
+          ) : (
+            <CommanderCommandDetail
+              commandArgsText={commandArgsText}
+              commandFlags={commandFlags}
+              commandForm={commandForm}
+              executionOutput={executionOutput}
+              reducedMotion={reducedMotion}
+              onAddToPipeline={addDetailCommandToPipeline}
+              onBack={backToList}
+              onRun={() => void runDetailCommand()}
+              setCommandArgsText={setCommandArgsText}
+              setCommandFlags={setCommandFlags}
+            />
+          )}
+        </AnimatePresence>
+      </motion.div>
+    </Command>
   );
 }

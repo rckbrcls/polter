@@ -1,11 +1,10 @@
-import { useMemo, useState, type CSSProperties, type JSX } from "react";
+import { useState, type CSSProperties, type JSX } from "react";
 import type { DesktopRepository } from "../workbench/types.js";
 import type { LucideIcon } from "lucide-react";
 import {
   BracesIcon,
   FolderIcon,
   FolderPlusIcon,
-  SearchIcon,
   SquareTerminalIcon,
   WorkflowIcon,
 } from "lucide-react";
@@ -184,8 +183,6 @@ export function RepositorySidebar({
   onSelectRepository: (repository: DesktopRepository) => void;
   repositories: DesktopRepository[];
 }): JSX.Element {
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [query, setQuery] = useState("");
   const [appearanceMap, setAppearanceMap] = useState<RepositoryAppearanceMap>(
     readRepositoryAppearanceMap,
   );
@@ -193,18 +190,6 @@ export function RepositorySidebar({
   const [appearanceDraft, setAppearanceDraft] = useState<RepositoryAppearance>(
     DEFAULT_REPOSITORY_APPEARANCE,
   );
-  const visibleRepositories = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-    if (!normalizedQuery) {
-      return repositories;
-    }
-
-    return repositories.filter(
-      (repository) =>
-        repository.name.toLowerCase().includes(normalizedQuery) ||
-        repository.path.toLowerCase().includes(normalizedQuery),
-    );
-  }, [query, repositories]);
 
   function getRepositoryAppearance(repository: DesktopRepository): RepositoryAppearance {
     return appearanceMap[repository.id] ?? DEFAULT_REPOSITORY_APPEARANCE;
@@ -268,17 +253,6 @@ export function RepositorySidebar({
               type="button"
               variant="ghost"
               size="icon-xs"
-              aria-pressed={filterOpen}
-              title="Filter projects"
-              onClick={() => setFilterOpen((open) => !open)}
-            >
-              <SearchIcon className="size-3.5" />
-              <span className="sr-only">Filter projects</span>
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-xs"
               title="Add repository"
               onClick={onAddRepository}
             >
@@ -288,26 +262,15 @@ export function RepositorySidebar({
           </div>
         </div>
 
-        {filterOpen ? (
-          <div className="px-2 group-data-[collapsible=icon]:hidden">
-            <Input
-              aria-label="Filter projects"
-              className="h-8"
-              placeholder="Filter projects"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-            />
-          </div>
-        ) : null}
-
         <SidebarGroupContent>
           <SidebarMenu>
-            {visibleRepositories.map((repository) => {
+            {repositories.map((repository) => {
               const active = repository.path === activeRepositoryPath;
               const removable = repository.id !== "current-workspace";
               const appearance = getRepositoryAppearance(repository);
               const RepositoryIcon = getRepositoryIcon(appearance.icon);
               const displayName = appearance.displayName || repository.name;
+              const compactPath = getCompactPath(repository.path);
 
               return (
                 <SidebarMenuItem key={repository.id}>
@@ -315,22 +278,19 @@ export function RepositorySidebar({
                     <ContextMenuTrigger asChild>
                       <SidebarMenuButton
                         isActive={active}
-                        tooltip={displayName}
+                        tooltip={{ children: compactPath, hidden: false }}
                         className={cn(
-                          "h-auto min-h-10 items-start py-2",
+                          "min-h-10 items-center py-2",
                           !repository.exists && "opacity-60",
                         )}
                         onClick={() => onSelectRepository(repository)}
                       >
                         <RepositoryIcon
-                          className="mt-0.5 size-4 shrink-0"
+                          className="size-4 shrink-0"
                           style={getRepositoryIconStyle(appearance.color)}
                         />
-                        <span className="grid min-w-0 gap-0.5 group-data-[collapsible=icon]:hidden">
+                        <span className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
                           <span className="truncate">{displayName}</span>
-                          <span className="truncate text-xs font-normal text-sidebar-foreground/55">
-                            {getCompactPath(repository.path)}
-                          </span>
                         </span>
                       </SidebarMenuButton>
                     </ContextMenuTrigger>
@@ -365,7 +325,7 @@ export function RepositorySidebar({
           }
         }}
       >
-        <DialogContent className="max-w-md rounded-4xl">
+        <DialogContent className="max-w-md">
           <form
             className="grid gap-5"
             onSubmit={(event) => {
