@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title">
+  <title>Polter Placeholder Icon</title>
+  <rect width="1024" height="1024" rx="224" fill="#0f172a" />
+  <rect x="232" y="184" width="144" height="656" rx="72" fill="#f8fafc" />
+  <path
+    d="M376 184h168c160 0 272 95 272 236 0 143-112 240-272 240H376V520h160c84 0 136-39 136-100s-52-100-136-100H376V184Z"
+    fill="#f8fafc"
+  />
+  <circle cx="752" cy="752" r="88" fill="#38bdf8" />
+</svg>

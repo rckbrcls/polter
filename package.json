@@ -1,10 +1,29 @@
 {
   "name": "@polterware/workspace",
   "private": true,
-  "packageManager": "bun@1.2.18",
-  "workspaces": [
-    "tui",
-    "packages/*",
-    "desktop/*"
-  ]
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "dev": "turbo run dev --filter=@polterware/desktop",
+    "build": "turbo run build",
+    "preview": "turbo run preview --filter=@polterware/desktop",
+    "dist": "turbo run dist --filter=@polterware/desktop",
+    "dist:mac": "turbo run dist:mac --filter=@polterware/desktop",
+    "dist:win": "turbo run dist:win --filter=@polterware/desktop",
+    "dist:linux": "turbo run dist:linux --filter=@polterware/desktop",
+    "dist:all": "turbo run dist:all --filter=@polterware/desktop",
+    "design:lint": "turbo run design:lint --filter=@polterware/desktop",
+    "deps:electron": "turbo run deps:electron --filter=@polterware/desktop",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "electron",
+      "electron-winstaller",
+      "esbuild"
+    ]
+  },
+  "devDependencies": {
+    "turbo": "^2.6.1"
+  }
 }

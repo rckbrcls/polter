@@ -1,7 +1,7 @@
 /**
  * Central execution function — THE single code path for all command runs.
  *
- * Every execution in Polter (TUI, MCP, pipeline steps, process starts)
+ * Every execution in Polter (desktop, MCP, pipeline steps, process starts)
  * should flow through `execute()`. This gives every execution:
  * - An ExecutionContext (correlation, timing, tool identity)
  * - Structured error wrapping (PolterError with category)

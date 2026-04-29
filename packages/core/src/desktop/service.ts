@@ -21,6 +21,12 @@ import type {
   ProjectConfig,
 } from "../data/types.js";
 import { readProjectConfig, writeProjectConfig, getOrCreateProjectConfig } from "../config/projectConfig.js";
+import type { DesktopRepository } from "../config/store.js";
+import {
+  addDesktopRepository as addStoredDesktopRepository,
+  listDesktopRepositories as listStoredDesktopRepositories,
+  removeDesktopRepository as removeStoredDesktopRepository,
+} from "../config/store.js";
 import { getCurrentStatus } from "../declarative/status.js";
 import { parsePolterYaml } from "../declarative/parser.js";
 import { planChanges } from "../declarative/planner.js";
@@ -32,7 +38,10 @@ import { resolvePkgArgs, detectPkgManager } from "../lib/pkgManager.js";
 import {
   findProcessesByCwd,
   generateProcessId,
+  getProcessOutput,
+  removeProcess,
   startProcess,
+  stopProcess,
 } from "../lib/processManager.js";
 import { runCommand } from "../lib/runner.js";
 import {
@@ -183,6 +192,18 @@ export function getDesktopPins(): DesktopPins {
     commandPins: getPinnedCommands(),
     runPins: getPinnedRuns(),
   };
+}
+
+export function listDesktopRepositories(): DesktopRepository[] {
+  return listStoredDesktopRepositories();
+}
+
+export function addDesktopRepository(repositoryPath: string): DesktopRepository {
+  return addStoredDesktopRepository(repositoryPath);
+}
+
+export function removeDesktopRepository(repositoryId: string): void {
+  removeStoredDesktopRepository(repositoryId);
 }
 
 export function getDesktopCommandForm(commandId: string): DesktopCommandForm {

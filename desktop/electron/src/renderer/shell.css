@@ -1,5 +1,0 @@
-/* Keep renderer overrides scoped so shadcn/ui primitives remain the source of truth. */
-
-.app-shell-surface {
-  min-height: 100vh;
-}

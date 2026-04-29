@@ -6,9 +6,12 @@ dist/
 dist/bin/
 build/
 coverage/
+.turbo/
 *.tsbuildinfo
-desktop/electron/dist/
-desktop/electron/dist-electron/
+apps/desktop/dist/
+apps/desktop/dist-electron/
+apps/desktop/out/
+apps/desktop/release/
 packages/*/dist/
 
 # Environment files

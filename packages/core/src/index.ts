@@ -155,7 +155,7 @@ export {
   type ParsedCliCommand,
 } from "./lib/cliArgs.js";
 export { commandExists, execCapture } from "./lib/system.js";
-export { parseErrorSuggestions, type ParsedErrorSuggestion } from "./lib/errorSuggestions.js";
+export { parseErrorSuggestions, type ErrorSuggestion } from "./lib/errorSuggestions.js";
 export { generatePolterYaml } from "./lib/yamlWriter.js";
 
 // Desktop services
@@ -165,6 +165,9 @@ export {
   listDesktopCommands,
   getDesktopCommandForm,
   getDesktopPins,
+  listDesktopRepositories,
+  addDesktopRepository,
+  removeDesktopRepository,
   toggleDesktopCommandPin,
   toggleDesktopRunPin,
   runDesktopCommand,
@@ -196,6 +199,7 @@ export {
   type DesktopDeclarativeApplyResult,
   type DesktopSkillPreview,
 } from "./desktop/service.js";
+export type { DesktopRepository } from "./config/store.js";
 
 // Types
 export type {

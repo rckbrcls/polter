@@ -70,7 +70,7 @@ describe("resolveSupabaseCommand", () => {
 
     expect(resolution.source).toBe("repository");
     expect(resolution.localBinDir).toBe(binDir);
-    expect(resolution.env.PATH).toBe(`${binDir}${delimiter}/usr/bin`);
+    expect(resolution.env?.PATH).toBe(`${binDir}${delimiter}/usr/bin`);
     expect(env.PATH).toBe("/usr/bin");
   });
 
@@ -85,7 +85,7 @@ describe("resolveSupabaseCommand", () => {
 
     expect(resolution.source).toBe("path");
     expect(resolution.localBinDir).toBeUndefined();
-    expect(resolution.env.PATH).toBe("/usr/bin");
+    expect(resolution.env?.PATH).toBe("/usr/bin");
   });
 });
 

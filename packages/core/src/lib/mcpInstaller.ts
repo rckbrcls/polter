@@ -129,7 +129,7 @@ export async function removeMcpServer(scope: McpScope): Promise<void> {
   process.stdout.write(pc.green("  Done! Polter MCP server removed.\n"));
 }
 
-// --- Structured data variants for TUI ---
+// --- Structured data variants for richer clients ---
 
 export interface McpStatusInfo {
   installedVersion: string;

@@ -1,0 +1,93 @@
+/* Keep renderer overrides scoped so shadcn/ui primitives remain the source of truth. */
+
+.app-shell-surface {
+  --app-window-chrome-height: 3rem;
+  --app-window-traffic-width: 4.75rem;
+  --app-main-panel-radius: calc(var(--radius) * 2.2);
+  min-height: 100vh;
+  background: var(--sidebar);
+}
+
+.app-shell-provider {
+  min-height: 100svh;
+  flex-direction: column;
+  background: var(--sidebar);
+}
+
+.app-window-sidebar-trigger {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  height: var(--app-window-chrome-height);
+  app-region: drag;
+  -webkit-app-region: drag;
+}
+
+.app-window-traffic-spacer {
+  width: var(--app-window-traffic-width);
+  height: var(--app-window-chrome-height);
+  flex: 0 0 var(--app-window-traffic-width);
+}
+
+.app-window-sidebar-trigger button,
+.app-shell-content-header button,
+.app-shell-content-header a,
+.app-shell-content-header input,
+.app-shell-content-header select,
+.app-shell-content-header textarea,
+.app-shell-content-header-actions {
+  app-region: no-drag;
+  -webkit-app-region: no-drag;
+}
+
+.app-shell-body {
+  display: flex;
+  width: 100%;
+  min-height: 100svh;
+  flex: 1 1 auto;
+  background: var(--sidebar);
+}
+
+.app-shell-sidebar {
+  top: 0 !important;
+  height: 100svh !important;
+  border-right: 0 !important;
+}
+
+.app-shell-sidebar-content {
+  padding-top: var(--app-window-chrome-height);
+}
+
+.app-shell-main {
+  z-index: 20;
+  height: 100svh;
+  min-height: 100svh;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-top-left-radius: var(--app-main-panel-radius);
+  border-bottom-left-radius: var(--app-main-panel-radius);
+  box-shadow: -10px 0 28px color-mix(in oklch, var(--border) 72%, transparent);
+}
+
+.app-shell-content-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: var(--app-window-chrome-height);
+  flex-shrink: 0;
+  app-region: drag;
+  -webkit-app-region: drag;
+}
+
+.app-shell-content {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.app-system-menu {
+  box-shadow: none;
+  backdrop-filter: none;
+}
