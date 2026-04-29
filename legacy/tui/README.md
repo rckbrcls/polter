@@ -255,4 +255,4 @@ MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Author
 
-[Polterware](https://www.polterware.com)
+[Erick Barcelos](https://erickbarcelos.com)

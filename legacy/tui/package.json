@@ -39,7 +39,7 @@
     "git",
     "typescript"
   ],
-  "author": "Polterware",
+  "author": "Erick Barcelos",
   "license": "MIT",
   "engines": {
     "bun": ">=1.0"
