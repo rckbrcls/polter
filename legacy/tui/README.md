@@ -3,6 +3,14 @@
 > **Status:** Archived
 > This TUI is kept as legacy transition code. New Polter product work should target the Electron desktop app and shared core workspace.
 
+## Summary
+
+- Archived Ink/Bun TUI and CLI implementation for the older Polter product direction.
+- Solved unified command browsing, pipeline execution, process management, package-manager detection, MCP serving, and binary distribution before the workspace moved desktop-first.
+- Main stack: TypeScript, Ink, React, Bun, MCP SDK, execa, conf, Zod, Vitest, and CLI packaging scripts.
+- Current status: archived transition code; do not use it as the source of truth for new desktop architecture.
+- Technical value: preserves useful command and workflow ideas while the active product moves to Electron plus shared core packages.
+
 ![Polter running](docs/assets/polter-hero.png)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -10,6 +18,10 @@
 An infrastructure orchestrator CLI for managing dev processes, pipelines, CLI commands (Supabase, GitHub, Vercel, Git), and packages from one unified interface.
 
 Polter replaces the need to juggle multiple CLIs. Browse a tabbed command board, chain steps into reusable pipelines, manage background processes, and apply declarative project configuration — all from a single TUI.
+
+## Overview
+
+This package is the archived terminal product that existed before the desktop-first Electron workspace became the active direction. It remains useful as a reference for command taxonomy, pipeline behavior, package-manager translation, pinned commands, and MCP integration.
 
 ## Features
 
@@ -24,17 +36,25 @@ Polter replaces the need to juggle multiple CLIs. Browse a tabbed command board,
 - **Built-in Self-Update**: Update Polter from inside the TUI or by re-running the install script
 - **TypeScript-based CLI**: Strongly typed internal implementation with React + Ink TUI
 
----
+## Tech Stack
 
-## Installation
+- TypeScript
+- Ink and React for the terminal UI
+- Bun for standalone binary packaging
+- MCP SDK for `polter-mcp`
+- execa for process execution
+- conf for local persisted preferences
+- Zod and Vitest for validation and tests
+
+## Getting Started
+
+### Installation
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/polterware/polter/main/install.sh | bash
 ```
 
 Downloads pre-built binaries (`polter` and `polter-mcp`) to `~/.polter/bin/`. Supports macOS (Apple Silicon + Intel) and Linux (arm64 + x64). No Node.js or other runtime required — Polter ships as a standalone binary powered by Bun.
-
-### Update
 
 Re-run the install script to update to the latest version:
 
@@ -43,8 +63,6 @@ curl -fsSL https://raw.githubusercontent.com/polterware/polter/main/install.sh |
 ```
 
 You can also update from inside Polter via **Actions > Update Polter**.
-
-### Uninstall
 
 Remove Polter binaries and clean up:
 
@@ -60,9 +78,7 @@ curl -fsSL https://raw.githubusercontent.com/polterware/polter/main/uninstall.sh
 
 This removes `polter` and `polter-mcp` from `~/.polter/bin/`. Remember to remove the PATH entry from your shell profile afterwards.
 
----
-
-## Requirements
+### Requirements
 
 No runtime dependencies — Polter ships as a standalone binary.
 
@@ -81,11 +97,9 @@ gh --version
 vercel --version
 ```
 
----
+## Usage
 
-## Quick Reference
-
-### Execution Model
+**Execution Model**
 
 Polter resolves the appropriate CLI tool and executes commands as:
 
@@ -95,17 +109,13 @@ Polter resolves the appropriate CLI tool and executes commands as:
 
 where `<tool>` is one of `supabase`, `gh`, `vercel`, `git`, or your package manager.
 
-### Typical Flow
+**Typical Flow**
 
 1. Choose a command from the unified board
 2. Optionally pin/unpin with `→`
 3. Choose suggested args or type custom extra args
 4. Pick optional global flags
 5. Confirm and execute
-
----
-
-## Command Categories
 
 Commands are organized into 9 feature groups in the TUI. Each group pulls from one or more CLI tools.
 
@@ -123,15 +133,7 @@ Commands are organized into 9 feature groups in the TUI. Each group pulls from o
 
 The board currently exposes **107 commands** across 5 CLI tools. Use the TUI tabs to browse a specific group or search across all of them.
 
----
-
-## Flags
-
 Flags are tool-specific. When you select a command, the interactive flag picker shows the available flags for that tool (e.g. `--debug` for Supabase, `--force` for Vercel, `--web` for GitHub CLI). You can also type custom flags in the extra-args input.
-
----
-
-## Pinned Commands
 
 Polter supports two pinned sections at the top of the main menu:
 
@@ -146,11 +148,7 @@ After a successful execution, Polter can also pin that exact command into `Pinne
 
 Pins are persisted locally using OS-level app config storage.
 
----
-
-## Usage Examples
-
-### Run a pipeline
+**Run a pipeline**
 
 ```bash
 polter pipeline run deploy-staging
@@ -158,7 +156,7 @@ polter pipeline run deploy-staging
 
 Executes each step of the `deploy-staging` pipeline in sequence, showing progress as it goes.
 
-### Deploy to Vercel
+**Deploy to Vercel**
 
 Interactive path:
 
@@ -172,7 +170,7 @@ Executed command:
 vercel deploy --prod
 ```
 
-### Create a GitHub PR
+**Create a GitHub PR**
 
 Interactive path:
 
@@ -186,7 +184,7 @@ Executed command:
 gh pr create --fill
 ```
 
-### Install a dependency
+**Install a dependency**
 
 Interactive path:
 
@@ -203,11 +201,51 @@ yarn add zod           # yarn
 bun add zod            # bun
 ```
 
----
+## Project Structure
 
-## Troubleshooting
+```text
+legacy/tui/
+├── src/              # Ink UI, command catalog, execution, pipelines, and MCP integration
+├── docs/assets/      # README screenshots and visual assets
+├── install.sh        # Historical binary installer
+├── uninstall.sh      # Historical uninstall path
+└── package.json      # Legacy package scripts and dependencies
+```
 
-### CLI tool not found
+## Architecture
+
+### Main Components
+
+- Command board: groups Supabase, GitHub, Vercel, Git, and package-manager commands.
+- Pipeline runner: executes named sequences of commands.
+- Process manager: starts and tracks background dev processes.
+- Package manager resolver: maps package actions to npm, pnpm, yarn, or bun.
+- MCP server: exposes legacy Polter capabilities to AI tools.
+
+### Data Flow
+
+The user chooses a command, pipeline, or pinned run in the Ink UI. Polter resolves the backing CLI and package manager, builds the command with selected args/flags, executes it through the local shell, and stores pins/preferences in OS-level app config storage.
+
+### Key Design Choices
+
+- Polter executes local shell commands through your installed CLI tools (Supabase, GitHub, Vercel, Git, package manager).
+- Keep tokens and credentials out of shared shells and CI logs.
+- Prefer short-lived tokens and least-privileged project access.
+
+## Technical Highlights
+
+- Demonstrates an Ink-based command board with typed command metadata.
+- Preserves a useful package-manager translation model.
+- Shows how pinned command/runs can make repeated CLI work faster.
+- Provides reference behavior for future desktop command and pipeline surfaces.
+
+## Current Status
+
+Archived transition code. New product work should target the Electron desktop app and shared core workspace. Original author/portfolio reference: [Erick Barcelos](https://erickbarcelos.com).
+
+## Known Limitations
+
+**CLI tool not found**
 
 If a tool (Supabase, `gh`, Vercel) is not installed, its commands will still appear in the board but will fail at execution. Open the **Tool Status** screen to see which tools are detected and linked.
 
@@ -217,45 +255,22 @@ Fix:
 2. Restart your terminal
 3. Re-open Polter — the Tool Status screen should show a green check
 
-### Command exits with non-zero code
+**Command exits with non-zero code**
 
 Polter forwards execution to the underlying CLI tool. Check the tool's own documentation for the specific error. For Supabase commands, try adding `--debug`; for GitHub CLI, try `--verbose`.
 
-### Pinned commands are missing
+**Pinned commands are missing**
 
 Pins are managed directly in the board. Select a base command and press `→` to pin it, or pin an exact run after a successful execution.
 
-### Interactive prompt did not open correctly
+**Interactive prompt did not open correctly**
 
 Ensure you are running in a terminal that supports interactive TTY prompts.
-
----
-
-## Security Notes
-
-- Polter executes local shell commands through your installed CLI tools (Supabase, GitHub, Vercel, Git, package manager).
-- Keep tokens and credentials out of shared shells and CI logs.
-- Prefer short-lived tokens and least-privileged project access.
-
----
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Commit changes with clear messages
-4. Open a pull request
 
 Repository:
 
 - [polterware/polter](https://github.com/polterware/polter)
 
----
-
 ## License
 
 MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Author
-
-[Erick Barcelos](https://erickbarcelos.com)
