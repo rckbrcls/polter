@@ -1,6 +1,26 @@
 # Polter Workspace
 
+> **Status:** Active
+> This project is currently maintained as a desktop-first Electron workspace.
+
 Polter is now a pnpm + Turborepo workspace focused on the Electron desktop app and the shared TypeScript core.
+
+## Summary
+
+- [Active Layout](#active-layout)
+- [Goals](#goals)
+- [Package Manager](#package-manager)
+- [Desktop Commands](#desktop-commands)
+- [Desktop App](#desktop-app)
+- [Core](#core)
+- [Electron Baseline](#electron-baseline)
+
+## Goals
+
+- Make Polter a desktop-first control surface for developer commands, pipelines, processes, MCP setup, and workspace automation.
+- Keep renderer UX separate from shared non-visual orchestration logic.
+- Preserve the old TUI only as archived transition code while the Electron app becomes the active product surface.
+- Keep the core portable enough to support future CLI, service, or Rust-backed execution paths.
 
 ## Active Layout
 

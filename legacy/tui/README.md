@@ -1,5 +1,8 @@
 # @polterware/polter
 
+> **Status:** Archived
+> This TUI is kept as legacy transition code. New Polter product work should target the Electron desktop app and shared core workspace.
+
 ![Polter running](docs/assets/polter-hero.png)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
