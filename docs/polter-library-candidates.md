@@ -54,7 +54,7 @@ If the answer is only "it looks modern", do not add it.
 | `which` | Command discovery | Resolve executables on `PATH`. | Yes. |
 | `zod` | Contracts | Runtime validation and typed schemas. | Yes. |
 | `ms` | Utilities | Duration parsing/formatting. | Yes. |
-| `picocolors` | CLI output | Terminal colors outside React/Ink. | Yes. |
+| `picocolors` | CLI output | Terminal colors outside renderer UI. | Yes. |
 
 ## Installed: Desktop And UI
 

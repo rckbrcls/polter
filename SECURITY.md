@@ -27,7 +27,6 @@ Review these areas carefully:
 - Logs that may contain command output, paths, or secrets.
 - Electron renderer/main-process separation.
 - Explicit preload bridge boundaries.
-- Legacy TUI code under `legacy/tui`, which is archived and should not drive new security assumptions.
 
 ## Secrets
 

@@ -57,10 +57,6 @@ Current use cases represented in code:
 - MCP installer and skill setup helpers.
 - Desktop service adapter exports.
 
-### Legacy TUI
-
-`legacy/tui` contains the archived Ink/Bun CLI/TUI implementation. It remains useful as a historical reference for command taxonomy and older flows, but it is not the active product surface.
-
 ## Main User Flow
 
 The current UI-only flow is:
@@ -98,13 +94,12 @@ That full chain is product direction, not fully implemented runtime behavior.
 - It does not provide production deployment infrastructure.
 - It does not configure signing, notarization, auto-update, release channels, or rollback.
 - The active renderer does not call real backend IPC handlers, start real processes, execute scripts, apply infrastructure, or install MCP.
-- It does not provide an active CLI package in the current workspace. The CLI/TUI code in `legacy/tui` is archived.
+- It does not provide an active CLI package in the current workspace.
 
 ## Important Decisions
 
 - `apps/desktop` is the live product surface.
 - `packages/core` is the non-visual logic boundary.
-- `legacy/tui` is archived transition code.
 - Renderer features should live under `apps/desktop/src/renderer/features/<feature>`.
 - `App.tsx` should remain a composition root.
 - Public IPC channels belong in `apps/desktop/src/shared/ipc.ts`.

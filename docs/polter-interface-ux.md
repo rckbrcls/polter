@@ -551,7 +551,7 @@ polter mcp ...
 polter node ...
 ```
 
-No active CLI package exists in the current workspace. The old CLI/TUI under `legacy/tui` is archived.
+No active CLI package exists in the current workspace.
 
 ## MCP UX Direction
 
@@ -650,4 +650,3 @@ Avoid:
 - Hidden production target state.
 - Destructive actions without context and approval.
 - Treating `Node`, `Gateway`, or `Relay` as primary user navigation.
-- Treating the old TUI as the new desktop IA.

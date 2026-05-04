@@ -25,7 +25,6 @@ This documentation describes the current Polter monorepo as it exists in this ch
 
 - `apps/desktop/` is the active Electron desktop product surface.
 - `packages/core/` owns shared non-visual command, pipeline, process, config, MCP, IPC, and desktop service logic.
-- `legacy/tui/` is archived transition code and should not drive new product decisions.
 
 ## Documentation Principles
 

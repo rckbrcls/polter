@@ -195,7 +195,7 @@ The desktop should follow `apps/desktop/DESIGN.md`: operational, compact, seriou
 
 ## CLI Direction
 
-No active CLI package exists in the current workspace. The old CLI/TUI under `legacy/tui` is archived.
+No active CLI package exists in the current workspace.
 
 Future CLI responsibilities:
 
@@ -221,7 +221,7 @@ These commands are product direction, not current active CLI behavior.
 
 ## MCP Direction
 
-Current code contains MCP installation helpers and an archived legacy MCP server. The active Electron renderer mocks MCP status and setup.
+Current code contains MCP installation helpers. The active Electron renderer mocks MCP status and setup.
 
 Future MCP should expose structured tools instead of unrestricted shell access:
 
@@ -306,7 +306,7 @@ Avoid building these too early:
 
 - Unrestricted remote shell access.
 - Full cloud runner hosting before local control-plane value is proven.
-- A new TUI as the primary interface.
+- A terminal-first app as the primary interface.
 - Vector search before command registry basics are durable.
 - Public remote MCP endpoints without a control plane.
 - Durable audit claims without durable storage.

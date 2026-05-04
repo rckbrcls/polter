@@ -104,10 +104,9 @@ This workflow appears stale for the current workspace because it:
 
 - Sets up Bun.
 - Runs `bun install --frozen-lockfile`.
-- Compiles root-level `src/index.tsx` and `src/mcp.ts`.
-- Publishes `polter` and `polter-mcp` binaries.
+- References root-level `src/index.tsx` and `src/mcp.ts` files.
 
-Those root-level source files do not exist in the active monorepo layout. Treat this workflow as legacy until it is removed or rewritten for the current Electron workspace.
+Those root-level source files do not exist in the active monorepo layout. Treat this workflow as stale until it is removed or rewritten for the current Electron workspace.
 
 ## Pre-Deployment Checklist
 

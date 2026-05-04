@@ -25,8 +25,6 @@ The active workspace packages are:
 - `apps/desktop`
 - `packages/core`
 
-`legacy/tui` is archived transition code and should not be used as the source of truth for new product work.
-
 ## Local Commands
 
 Common checks:
@@ -93,7 +91,7 @@ When adding a real bridge/IPC behavior:
 Before opening a pull request:
 
 - Describe the change and why it is needed.
-- State whether it touches `apps/desktop`, `packages/core`, docs, or archived legacy code.
+- State whether it touches `apps/desktop`, `packages/core`, or docs.
 - Run relevant checks locally when allowed.
 - Include screenshots for meaningful UI changes when practical.
 - Update documentation for any public workflow, architecture, setup, command, storage, or security change.
@@ -117,4 +115,4 @@ fix: keep commander shortcut registration stable
 test: cover mock workbench process logs
 ```
 
-Keep commits focused and avoid mixing active Electron/core changes with archived `legacy/tui` cleanup unless the relationship is intentional.
+Keep commits focused and avoid mixing unrelated Electron, core, documentation, and cleanup changes.

@@ -7,7 +7,6 @@ Polter is organized as a small monorepo:
 ```text
 apps/desktop/      # Active Electron desktop app
 packages/core/     # Shared non-visual TypeScript services
-legacy/tui/        # Archived Ink/Bun TUI implementation
 docs/              # Project documentation
 ```
 
@@ -130,11 +129,10 @@ Recommended default:
 - Keep commits focused.
 - Write commit messages in English.
 - Include tests or static checks relevant to the change.
-- Explain whether a change affects active Electron code, shared core logic, docs, or archived legacy code.
+- Explain whether a change affects active Electron code, shared core logic, or docs.
 
 ## Project-Specific Best Practices
 
-- Do not treat `legacy/tui` as the active product.
 - Do not describe UI-only mock behavior as real execution.
 - Do not scatter `window.polter` calls through view components when real bridge usage returns; centralize them in feature hooks or services.
 - Keep public IPC channels explicit.

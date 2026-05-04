@@ -19,7 +19,6 @@ Developer operations often spread across shell history, package scripts, GitHub 
 - Project-level `.polter/config.json` support for tool metadata, child repositories, environment entries, and pipelines.
 - Local global config through the `conf` package for global pipelines and saved desktop repositories.
 - Electron Builder packaging configuration for unsigned macOS, Windows, and Linux artifacts.
-- Archived Ink/Bun TUI under `legacy/tui` for historical reference only.
 
 ## Technology Stack
 
@@ -59,7 +58,6 @@ flowchart LR
   Core --> Pipelines["Pipeline Engine"]
   Core --> Config["Config Storage"]
   Core --> MCP["MCP Setup"]
-  Legacy["legacy/tui"] -.-> Core
 ```
 
 See [docs/architecture.md](docs/architecture.md) for the full technical architecture.
@@ -73,10 +71,9 @@ See [docs/architecture.md](docs/architecture.md) for the full technical architec
 ├── packages/
 │   └── core/                 # Shared non-visual TypeScript services
 ├── docs/                     # Product, architecture, setup, API, storage, and workflow docs
-├── legacy/
-│   └── tui/                  # Archived Ink/Bun TUI and CLI implementation
+├── legacy/                   # Retained archived code, not part of the active product
 ├── screenshots/              # Placeholder folder for future visual evidence
-├── .github/workflows/        # Contains a stale legacy release workflow
+├── .github/workflows/        # Contains a stale release workflow
 ├── .polter/config.json       # Project-level Polter config for this checkout
 ├── pnpm-workspace.yaml
 ├── turbo.json
@@ -184,7 +181,6 @@ The current test suite includes:
 - Preload bridge tests for channel routing and Commander focus events.
 - Renderer tests for root surface selection, navigation catalogs, mock workbench behavior, scripts, pipelines, processes, and Commander search.
 - Core tests for command metadata, config storage, execution helpers, process manager behavior, IPC protocol, package manager detection, YAML writer, pins, suggested args, and error modeling.
-- Legacy TUI tests under `legacy/tui`, retained with archived code.
 
 ## Build
 
@@ -261,7 +257,6 @@ Example `.polter/config.json` shape from this repository:
 - Active product surface: Electron desktop app in `apps/desktop`.
 - Active shared logic: TypeScript core package in `packages/core`.
 - Renderer runtime state: UI-only and mock-first.
-- Legacy TUI: archived transition code in `legacy/tui`.
 - Packaging: local unsigned Electron Builder configuration exists.
 - Deployment/release automation: not production-ready in the current active workspace.
 - Database: no database, ORM, migrations, or seeds are active.
@@ -272,11 +267,11 @@ Example `.polter/config.json` shape from this repository:
 Useful next steps based on the current codebase:
 
 - Replace UI-only IPC handlers with carefully scoped real handlers when runtime integration is approved.
-- Decide whether `.github/workflows/release.yml` should be removed, rewritten for Electron packaging, or kept only for legacy reference.
+- Decide whether `.github/workflows/release.yml` should be removed or rewritten for Electron packaging.
 - Add durable local storage if the command registry, audit history, machine registry, or process history moves beyond config files and memory.
 - Add signing, notarization, release channel, and rollback policy before public distribution.
 - Add screenshots to `screenshots/` and reference them from this README when the UI is ready for portfolio presentation.
 
 ## License
 
-No root license file or root `license` field was identified in the active workspace. The archived `legacy/tui` package declares MIT and contains its own `legacy/tui/LICENSE`; that license should not be assumed to cover the entire current monorepo without confirmation.
+No root license file or root `license` field was identified in the active workspace.

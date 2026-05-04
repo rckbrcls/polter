@@ -8,7 +8,6 @@ Current implementation status:
 
 - `apps/desktop` is the active Electron product.
 - `packages/core` is the active shared non-visual package.
-- `legacy/tui` is archived transition code.
 - The renderer is UI-only and mock-first.
 - Real bridge and core services exist as contracts and helpers, but most desktop IPC handlers are intentionally disconnected in UI-only mode.
 
@@ -194,8 +193,6 @@ The process manager is in memory. It is not backed by a database.
 `apps/desktop` depends on `@polterware/core` through the workspace package. Electron Vite is configured with `resolve.preserveSymlinks: false` and excludes `@polterware/core` from dependency externalization in the main bundle so TypeScript source imports are bundled into `out/`.
 
 `packages/core` has no dependency on `apps/desktop`.
-
-`legacy/tui` contains copied or historical logic and should not be used as an active architecture dependency.
 
 ## External Dependencies
 
