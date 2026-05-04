@@ -45,21 +45,21 @@ The renderer is currently isolated from real runtime services. `apps/desktop/src
 
 ```mermaid
 flowchart LR
-  User[Developer] --> Desktop[Electron Desktop]
-  Desktop --> Main[Main Process]
-  Main --> Window[Window and Commander Overlay]
-  Desktop --> Preload[Preload Bridge]
-  Preload --> Bridge[window.polter]
-  Bridge --> Channels[IPC_CHANNELS]
-  Desktop --> Renderer[React Renderer]
-  Renderer --> Mock[Mock Workbench Adapter]
-  Main -. UI-only handlers .-> Channels
-  Core[@polterware/core] --> Commands[Command Catalog]
-  Core --> Processes[Process Manager]
-  Core --> Pipelines[Pipeline Engine]
-  Core --> Config[Config Storage]
-  Core --> MCP[MCP Setup]
-  Legacy[legacy/tui] -. archived reference .-> Core
+  User["Developer"] --> Desktop["Electron Desktop"]
+  Desktop --> Main["Main Process"]
+  Main --> Window["Window and Commander Overlay"]
+  Desktop --> Preload["Preload Bridge"]
+  Preload --> Bridge["window.polter"]
+  Bridge --> Channels["IPC_CHANNELS"]
+  Desktop --> Renderer["React Renderer"]
+  Renderer --> Mock["Mock Workbench Adapter"]
+  Main -.-> Channels
+  Core["@polterware/core"] --> Commands["Command Catalog"]
+  Core --> Processes["Process Manager"]
+  Core --> Pipelines["Pipeline Engine"]
+  Core --> Config["Config Storage"]
+  Core --> MCP["MCP Setup"]
+  Legacy["legacy/tui"] -.-> Core
 ```
 
 See [docs/architecture.md](docs/architecture.md) for the full technical architecture.

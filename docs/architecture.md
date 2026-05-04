@@ -135,7 +135,7 @@ flowchart TB
   Preload --> Renderer
   Renderer --> Mock
   Renderer --> Commander
-  SharedIPC -. future real handlers .-> DesktopService
+  SharedIPC -.-> DesktopService
   DesktopService --> Catalog
   DesktopService --> Runner
   DesktopService --> ProcessManager
