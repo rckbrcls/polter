@@ -1,140 +1,282 @@
-# Polter Workspace
+# Polter
 
-> **Status:** To be confirmed
-> This checkout appears to mirror the desktop-first Polter workspace, but its canonical remote/status should be verified before release.
+Polter is a desktop-first command workbench for inspecting, composing, and supervising developer workflows. The current repository is a `pnpm` + Turborepo monorepo with an Electron desktop app in `apps/desktop` and shared non-visual TypeScript services in `packages/core`.
 
-Polter is a pnpm + Turborepo workspace focused on the Electron desktop app and the shared TypeScript core.
+The product direction is a serious operational surface for commands, pipelines, processes, project configuration, MCP setup, scripts, and local workspace automation. The current Electron renderer is intentionally UI-only and mock-first: it demonstrates the desktop experience without running real backend, IPC, process, MCP, script, or declarative apply operations from the renderer.
 
-## Summary
+## Problem
 
-- Polter is a desktop-first control surface for developer commands, pipelines, processes, MCP setup, and workspace automation.
-- The active product in this checkout is an Electron app in `apps/desktop`, backed by shared non-visual TypeScript services in `packages/core`.
-- The old Ink TUI remains in `legacy/tui` only as archived transition code; it should not drive new product direction.
-- Main stack: pnpm, Turborepo, Electron, electron-vite, React, TypeScript, Vitest, and Electron Builder.
-- Current status: to be confirmed against the `polter-rckbrcls` remote before treating this checkout as canonical.
+Developer operations often spread across shell history, package scripts, GitHub CLI, Vercel CLI, Supabase CLI, local process managers, MCP configuration, and one-off project notes. Polter brings those operational primitives into one desktop workbench so a developer can inspect project state, stage commands, compose pipelines, view process-like activity, and keep automation surfaces explicit.
 
-## Overview
+## Main Features
 
-Polter is being rebuilt as a desktop-first developer control plane. The live workspace centers on an Electron renderer, explicit preload bridge, and shared TypeScript core package. Runtime execution, process orchestration, MCP setup, skills, and desktop service adapters belong outside the renderer so the UI can stay product-focused and the core can evolve independently.
+- Electron desktop app with a main window and a global Commander overlay.
+- UI-only renderer workbench with mock data for Processes, Pipelines, Scripts, Infrastructure, Tool Status, MCP, Skill Setup, Project Config, Settings, and command feature views.
+- Typed preload bridge exposed as `window.polter`.
+- Explicit IPC channel catalog in `apps/desktop/src/shared/ipc.ts`.
+- Shared command catalog for Supabase, GitHub CLI, Vercel CLI, Git, and package-manager commands.
+- Shared process manager, pipeline engine, declarative planner, MCP installer, config storage, and desktop service helpers in `packages/core`.
+- Project-level `.polter/config.json` support for tool metadata, child repositories, environment entries, and pipelines.
+- Local global config through the `conf` package for global pipelines and saved desktop repositories.
+- Electron Builder packaging configuration for unsigned macOS, Windows, and Linux artifacts.
+- Archived Ink/Bun TUI under `legacy/tui` for historical reference only.
 
-## Motivation
+## Technology Stack
 
-- Make Polter a desktop-first control surface for developer commands, pipelines, processes, MCP setup, and workspace automation.
-- Keep renderer UX separate from shared non-visual orchestration logic.
-- Preserve the old TUI only as archived transition code while the Electron app becomes the active product surface.
-- Keep the core portable enough to support future CLI, service, or Rust-backed execution paths.
+| Area | Technology |
+| --- | --- |
+| Workspace | `pnpm@10.33.0`, Turborepo |
+| Desktop runtime | Electron, electron-vite, Electron Builder |
+| Renderer | React 19, TypeScript, Vite, Tailwind CSS, shadcn/ui, Radix/Base UI-style primitives |
+| UI utilities | lucide-react, cmdk, motion, sonner, Orama, dnd-kit, react-resizable-panels |
+| Core services | TypeScript, Zod, execa, conf, eventemitter3, p-limit, p-retry, which |
+| MCP support | `@modelcontextprotocol/sdk` plus local MCP installation helpers |
+| Tests | Vitest, Testing Library React, jsdom |
 
-## Features
+## Architecture
 
-- Electron desktop product in `apps/desktop`.
-- Shared non-visual command, pipeline, process, config, MCP, skill, and workspace services in `packages/core`.
-- Archived Ink/Bun TUI in `legacy/tui` for transition reference only.
-- Root Turborepo scripts for type-checking, tests, design linting, and packaging tasks.
-- Typed preload bridge exposed as `window.polter` instead of direct renderer access to Node APIs.
+Polter is split into three active layers:
 
-## Tech Stack
+- `apps/desktop`: Electron main process, preload bridge, renderer shell, feature modules, UI components, tests, design contract, and packaging config.
+- `packages/core`: shared non-visual services for commands, runners, processes, pipelines, declarative planning, config, MCP setup, IPC helpers, and desktop adapters.
+- Root workspace: package orchestration, Turborepo tasks, workspace lockfile, docs, and project-level `.polter/config.json`.
 
-- pnpm workspace
-- Turborepo
-- Electron
-- electron-vite
-- Electron Builder
-- React
-- TypeScript
-- Vitest
+The renderer is currently isolated from real runtime services. `apps/desktop/src/main/ipc.ts` registers public channels, but most handlers deliberately throw UI-only mode errors. The active renderer uses `apps/desktop/src/renderer/features/workbench/mock-workbench-adapter.ts` instead of calling real IPC or starting processes.
 
-## Getting Started
+```mermaid
+flowchart LR
+  User[Developer] --> Desktop[Electron Desktop]
+  Desktop --> Main[Main Process]
+  Main --> Window[Window and Commander Overlay]
+  Desktop --> Preload[Preload Bridge]
+  Preload --> Bridge[window.polter]
+  Bridge --> Channels[IPC_CHANNELS]
+  Desktop --> Renderer[React Renderer]
+  Renderer --> Mock[Mock Workbench Adapter]
+  Main -. UI-only handlers .-> Channels
+  Core[@polterware/core] --> Commands[Command Catalog]
+  Core --> Processes[Process Manager]
+  Core --> Pipelines[Pipeline Engine]
+  Core --> Config[Config Storage]
+  Core --> MCP[MCP Setup]
+  Legacy[legacy/tui] -. archived reference .-> Core
+```
 
-### Requirements
+See [docs/architecture.md](docs/architecture.md) for the full technical architecture.
 
-- pnpm
-- Node.js compatible with the Electron workspace dependencies
+## Folder Structure
 
-### Installation
+```text
+.
+├── apps/
+│   └── desktop/              # Active Electron desktop app
+├── packages/
+│   └── core/                 # Shared non-visual TypeScript services
+├── docs/                     # Product, architecture, setup, API, storage, and workflow docs
+├── legacy/
+│   └── tui/                  # Archived Ink/Bun TUI and CLI implementation
+├── screenshots/              # Placeholder folder for future visual evidence
+├── .github/workflows/        # Contains a stale legacy release workflow
+├── .polter/config.json       # Project-level Polter config for this checkout
+├── pnpm-workspace.yaml
+├── turbo.json
+└── package.json
+```
+
+## Prerequisites
+
+- Node.js compatible with the Electron and TypeScript toolchain in this workspace.
+- pnpm. The root manifest declares `pnpm@10.33.0`.
+- Git for normal repository work.
+- Optional CLIs for core command catalog workflows: Supabase CLI, GitHub CLI (`gh`), Vercel CLI, and a supported package manager (`npm`, `pnpm`, `yarn`, or `bun`).
+
+## Installation
+
+Install dependencies from the repository root:
 
 ```bash
 pnpm install
 ```
 
-The workspace is declared in `pnpm-workspace.yaml`, and task orchestration is declared in `turbo.json`.
+The workspace packages are declared in `pnpm-workspace.yaml`:
 
-### Running Locally
+```yaml
+packages:
+  - "apps/*"
+  - "packages/*"
+```
 
-Run the app from the desktop package when you are working directly on the product:
+## Environment Configuration
+
+Copy `.env.example` when local overrides are needed:
 
 ```bash
-cd apps/desktop
+cp .env.example .env
+```
+
+Current documented variables:
+
+| Variable | Purpose |
+| --- | --- |
+| `ELECTRON_RENDERER_URL` | Development renderer URL consumed by Electron when a Vite renderer server is active. |
+| `POLTER_LOG_FORMAT` | Core diagnostic log format. Supported values are inferred from code as `text` or `json`. |
+| `POLTER_LOG_LEVEL` | Core diagnostic log level. |
+| `POLTER_DEBUG` | Enables debug mode when set to `1` or `true`. |
+| `EDITOR` | Preferred editor for config/edit flows. |
+| `VISUAL` | Preferred visual editor. Takes precedence over `EDITOR`. |
+
+No required production secrets were identified in the current active workspace.
+
+## Running Locally
+
+The root development script delegates to Turborepo and filters the desktop package:
+
+```bash
 pnpm dev
 ```
 
-Agent work in this repository must not run dev, build, preview, or dist commands. If runtime verification is needed, document the command for Erick to run.
+The desktop package script runs:
 
-### Running Tests
-
-Root scripts are Turborepo wrappers:
-
-- `pnpm typecheck` type-checks active workspace packages.
-- `pnpm test` runs active workspace tests.
-- `pnpm design:lint` validates the desktop design contract.
-
-## Usage
-
-Desktop workflow commands are documented for local use:
-
-- `pnpm dev` runs the desktop app through Turbo.
-- `pnpm typecheck` type-checks active workspace packages.
-- `pnpm test` runs active workspace tests.
-- `pnpm design:lint` validates the desktop design contract.
-- `pnpm dist`, `pnpm dist:mac`, `pnpm dist:win`, `pnpm dist:linux`, and `pnpm dist:all` package the desktop app.
-
-No new CLI package exists yet. If a CLI returns later, it should be designed as a new surface instead of reviving the old TUI.
-
-## Project Structure
-
-```text
-polter-rckbrcls/
-├── apps/desktop/      # Electron desktop product
-├── packages/core/     # Shared non-visual orchestration services
-├── legacy/tui/        # Archived Ink/Bun TUI
-├── pnpm-workspace.yaml
-└── turbo.json
+```bash
+electron-vite dev
 ```
 
-`apps/desktop` uses `electron.vite.config.ts` for the Electron Vite pipeline, `electron-builder.yml` for unsigned packaging, `DESIGN.md` as the visual source of truth, `out/` for Electron Vite output, and `release/<version>/` for packaged artifacts.
+Agent sessions in this repository must not execute development, preview, build, or distribution commands. When runtime verification is needed, Erick should run the relevant command locally.
 
-## Architecture
+## Available Scripts
 
-### Main Components
+Root scripts:
 
-- `apps/desktop`: Electron main, preload, and renderer surfaces.
-- `packages/core`: shared non-visual services for commands, pipelines, process management, config, MCP, skills, and workspace state.
-- `legacy/tui`: archived Ink/Bun implementation retained only for transition reference.
+| Script | What it does |
+| --- | --- |
+| `pnpm dev` | Runs `turbo run dev --filter=@polterware/desktop`. |
+| `pnpm build` | Runs `turbo run build`. |
+| `pnpm preview` | Runs `turbo run preview --filter=@polterware/desktop`. |
+| `pnpm dist` | Runs desktop distribution through Turbo. |
+| `pnpm dist:mac` | Builds a macOS desktop package target. |
+| `pnpm dist:win` | Builds a Windows desktop package target. |
+| `pnpm dist:linux` | Builds a Linux desktop package target. |
+| `pnpm dist:all` | Builds all configured desktop package targets. |
+| `pnpm design:lint` | Runs the desktop `DESIGN.md` lint task. |
+| `pnpm deps:electron` | Prints the Electron dependency version from the desktop package. |
+| `pnpm typecheck` | Runs package type-checking through Turbo. |
+| `pnpm test` | Runs package tests through Turbo. |
 
-### Data Flow
+Desktop package scripts are defined in `apps/desktop/package.json`. Core package scripts are defined in `packages/core/package.json`.
 
-The renderer talks to the desktop shell through explicit preload APIs. The desktop app can delegate shared command, pipeline, process, config, MCP, and skill behavior to `@polterware/core` instead of placing orchestration logic inside UI components.
+## Tests
 
-### Key Design Choices
+Run all active workspace tests:
 
-- The packaged app entry is `apps/desktop/out/main/index.js`, the preload is `apps/desktop/out/preload/index.js`, and the renderer HTML is `apps/desktop/out/renderer/index.html`.
-- The renderer consumes the typed preload bridge exposed as `window.polter`.
-- Public IPC channels stay explicit in `apps/desktop/src/shared/ipc.ts`.
-- `@polterware/core` stays isolated so process orchestration can later move to Rust or a dedicated service without forcing a renderer rewrite.
-- The main process keeps secure Electron defaults explicit: context isolation enabled, Node integration disabled in the renderer, sandboxing enabled, web security enabled, default permission denial, constrained navigation, and a restrictive renderer CSP.
+```bash
+pnpm test
+```
 
-## Technical Highlights
+Run type-checking:
 
-- Separates renderer UX from non-visual orchestration services.
-- Keeps archived TUI behavior available as domain reference without making it the active architecture.
-- Uses electron-vite and Electron Builder for local desktop output.
-- Documents agent restrictions beside the commands that humans may run locally.
+```bash
+pnpm typecheck
+```
 
-## Current Status
+The current test suite includes:
 
-This checkout looks aligned with the desktop-first Polter workspace, but its canonical status should be confirmed against the remote/repo owner before publication. The old TUI is archived, and desktop package output is unsigned/local by default.
+- Electron main-process tests for IPC registration and global shortcuts.
+- Preload bridge tests for channel routing and Commander focus events.
+- Renderer tests for root surface selection, navigation catalogs, mock workbench behavior, scripts, pipelines, processes, and Commander search.
+- Core tests for command metadata, config storage, execution helpers, process manager behavior, IPC protocol, package manager detection, YAML writer, pins, suggested args, and error modeling.
+- Legacy TUI tests under `legacy/tui`, retained with archived code.
 
-## Known Limitations
+## Build
 
-- Signing, notarization, publishing, and auto-update are not configured in the current phase.
-- Runtime commands are documented but not executed by agents in this environment.
-- There is no new active CLI package yet.
+Build the workspace:
+
+```bash
+pnpm build
+```
+
+The desktop build uses `electron-vite` and writes:
+
+- Main process output to `apps/desktop/out/main`.
+- Preload output to `apps/desktop/out/preload`.
+- Renderer output to `apps/desktop/out/renderer`.
+
+## Packaging And Deployment
+
+Polter is packaged as an Electron desktop app through Electron Builder:
+
+```bash
+pnpm dist
+pnpm dist:mac
+pnpm dist:win
+pnpm dist:linux
+pnpm dist:all
+```
+
+Current package targets from `apps/desktop/electron-builder.yml`:
+
+- macOS `dmg`
+- Windows `nsis` for `x64`
+- Linux `AppImage`
+
+Signing, notarization, publishing, auto-update, rollback, and production release channels were not identified in the current active codebase.
+
+The existing `.github/workflows/release.yml` appears stale for the current monorepo because it uses Bun and root-level `src/index.tsx` / `src/mcp.ts` paths that do not exist in the active workspace layout.
+
+## Usage Examples
+
+Open the desktop app in development:
+
+```bash
+pnpm dev
+```
+
+Run static checks:
+
+```bash
+pnpm typecheck
+pnpm test
+pnpm design:lint
+```
+
+Inspect the configured Electron dependency version:
+
+```bash
+pnpm deps:electron
+```
+
+Example `.polter/config.json` shape from this repository:
+
+```json
+{
+  "version": 1,
+  "tools": {
+    "supabase": {}
+  },
+  "pipelines": []
+}
+```
+
+## Current Project Status
+
+- Active product surface: Electron desktop app in `apps/desktop`.
+- Active shared logic: TypeScript core package in `packages/core`.
+- Renderer runtime state: UI-only and mock-first.
+- Legacy TUI: archived transition code in `legacy/tui`.
+- Packaging: local unsigned Electron Builder configuration exists.
+- Deployment/release automation: not production-ready in the current active workspace.
+- Database: no database, ORM, migrations, or seeds are active.
+- HTTP API: not present.
+
+## Roadmap And Next Steps
+
+Useful next steps based on the current codebase:
+
+- Replace UI-only IPC handlers with carefully scoped real handlers when runtime integration is approved.
+- Decide whether `.github/workflows/release.yml` should be removed, rewritten for Electron packaging, or kept only for legacy reference.
+- Add durable local storage if the command registry, audit history, machine registry, or process history moves beyond config files and memory.
+- Add signing, notarization, release channel, and rollback policy before public distribution.
+- Add screenshots to `screenshots/` and reference them from this README when the UI is ready for portfolio presentation.
+
+## License
+
+No root license file or root `license` field was identified in the active workspace. The archived `legacy/tui` package declares MIT and contains its own `legacy/tui/LICENSE`; that license should not be assumed to cover the entire current monorepo without confirmation.

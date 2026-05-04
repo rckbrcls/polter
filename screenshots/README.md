@@ -1,18 +1,14 @@
 # Screenshots
 
-## Summary
+This folder is reserved for Polter visual evidence.
 
-- Companion folder for Polter visual evidence.
-- Stores screenshots that should be referenced from the main project README.
-- Current status: placeholder checklist; screenshots still need to be added.
+No screenshots are currently committed in this folder. When the UI is ready for portfolio or release presentation, add focused screenshots here and reference them from the root README.
 
-## Screenshots / Demo
+Recommended future screenshots:
 
-Add project screenshots here and reference them from the main README.
-
-Recommended screenshots:
-
-- Desktop command workspace
-- Pipeline or process view
-- Approval state
-- Settings view
+- Desktop process workbench.
+- Commander overlay.
+- Pipeline builder or pipeline list.
+- Script library and editor.
+- Project sidebar appearance controls.
+- Tool Status or MCP setup surface.

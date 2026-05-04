@@ -1,37 +1,37 @@
 # Polter Interface UX
 
-Este documento descreve a interface ideal do Polter para Desktop, CLI e MCP. Ele complementa `docs/polter-product-architecture.md` e deve orientar produto, design e implementação futura.
+This document describes the intended interface direction for Polter across Desktop, CLI, and MCP. It is product direction, not a statement that every capability is currently implemented.
 
-O padrão central é:
+The current Electron renderer is UI-only and mock-first. The long-term UX model is:
 
-```txt
+```text
 Machine -> Command -> Stage -> Approval -> Execution -> Logs -> Audit
 ```
 
-O Polter deve ser uma interface operacional para humanos e agentes, não um dashboard genérico e não um terminal livre disfarçado.
+Polter should be an operational interface for humans and agents. It should not become a generic dashboard, a marketing surface, or an unrestricted shell wrapper.
 
 ## UX Mission
 
-Polter deve transformar comandos e processos reais em operações compreensíveis, auditáveis e seguras.
+Polter should turn real commands and processes into understandable, reviewable, and safe operations.
 
-O usuário deve sempre entender:
+The user should always be able to answer:
 
-- onde a ação vai acontecer,
-- o que será executado,
-- quem pediu,
-- qual é o risco,
-- qual aprovação é necessária,
-- o que aconteceu depois da execução.
+- Where will this action happen?
+- What will be executed?
+- Who requested it?
+- What is the risk?
+- What approval is required?
+- What happened after execution?
 
-Frase guia:
+Guiding product sentence:
 
 > Polter is a machine-first command workbench for safe human and agent operations.
 
 ## Mental Model
 
-Polter é `machine-first`.
+Polter is machine-first.
 
-O usuário não começa pela ferramenta, pelo processo ou pelo agente. Ele começa pela máquina:
+The user should start from an operable machine or workspace context, not from an abstract tool list. In future versions, examples might include:
 
 - `This Mac`
 - `Windows PC`
@@ -39,68 +39,77 @@ O usuário não começa pela ferramenta, pelo processo ou pelo agente. Ele come�
 - `staging-worker`
 - `customer-demo`
 
-Ao trocar a máquina ativa, a interface troca o contexto de:
+Switching machine context should change:
 
-- comandos disponíveis,
-- workspaces,
-- processos,
-- logs,
-- pipelines,
-- histórico,
-- políticas,
-- aprovações,
-- agentes com acesso.
+- Commands.
+- Workspaces.
+- Processes.
+- Logs.
+- Pipelines.
+- History.
+- Policies.
+- Approvals.
+- Agent access.
 
-O usuário deve sentir que está operando uma máquina específica, não uma lista abstrata de comandos.
+The current desktop UI has project/workspace-oriented mock surfaces. Future machine support should preserve the same operational clarity.
 
 ## Shared Product Language
 
-CLI, Desktop e MCP devem usar os mesmos conceitos.
+Desktop, CLI, and MCP should use the same concepts.
 
-Vocabulário principal:
+Primary vocabulary:
 
-- `Machine`: ambiente operável.
-- `Command`: operação descoberta, curada ou escrita pelo usuário.
-- `Stage`: preparação de execução antes de rodar.
-- `Approval`: decisão humana ou política explícita.
-- `Execution`: comando ou pipeline em andamento/concluído.
-- `Process`: execução long-running ou monitorável.
-- `Log`: saída e eventos estruturados.
-- `Audit`: registro final de quem pediu, aprovou e executou.
-- `Agent`: consumidor MCP com permissões controladas.
+| Term | Meaning |
+| --- | --- |
+| `Machine` | An operable environment. |
+| `Command` | A discovered, curated, or user-authored operation. |
+| `Stage` | Preparation before execution. |
+| `Approval` | Explicit human or policy decision. |
+| `Execution` | A command or pipeline run. |
+| `Process` | A long-running or monitorable execution. |
+| `Log` | Raw output and structured events. |
+| `Audit` | Record of who requested, approved, and executed. |
+| `Agent` | MCP consumer with controlled permissions. |
 
-Vocabulário secundário:
+Secondary vocabulary:
 
-- `Node`: serviço local em uma máquina. Deve ficar em diagnóstico/configuração.
-- `Gateway`: roteador de sessões. Deve ficar em configuração avançada.
-- `Relay`: transporte self-hosted/cloud. Deve ficar em configuração avançada.
+| Term | UX placement |
+| --- | --- |
+| `Node` | Diagnostics and setup details. |
+| `Gateway` | Advanced routing/configuration. |
+| `Relay` | Advanced transport/cloud configuration. |
 
-Na navegação principal, preferir `Machines`, não `Nodes`.
+Primary navigation should favor user-facing concepts such as Machines, Commands, Processes, Logs, Pipelines, Approvals, Agents, History, and Settings. `Node`, `Gateway`, and `Relay` should not be the first words in the default experience.
 
 ## Desktop UX
 
-O Desktop é o cockpit humano. Ele deve ser visual, inspecionável, denso e orientado a aprovação.
+The desktop app is the human cockpit. It should be visual, inspectable, dense, keyboard-friendly, and approval-oriented.
 
-Ele deve seguir o contrato de `apps/desktop/DESIGN.md`: workbench sério, maduro, keyboard-friendly, com tabelas, split panes, logs, status strips e Commander. Não deve parecer landing page, dashboard de SaaS genérico ou tela decorativa.
+It must follow `apps/desktop/DESIGN.md`:
 
-### App Shell
+- Serious command workbench.
+- Dense rows and compact surfaces.
+- Tables, split panes, logs, forms, status strips, command palettes, and inspectors.
+- Minimal decorative chrome.
+- No marketing heroes or generic SaaS dashboard styling.
 
-Estrutura ideal:
+### Shell Shape
 
-```txt
+Ideal long-term shell:
+
+```text
 Sidebar
-  Machines
+  Projects / Machines
   Workspaces
   Primary views
 
 Header
-  Machine switcher
-  Current workspace
+  Active context
   Commander
-  Agent/approval status
+  Status and approvals
 
 Main area
-  Active view
+  Active workflow view
 
 Inspector
   Selected item details
@@ -110,9 +119,9 @@ Inspector
   Actions
 ```
 
-A interface deve deixar o contexto ativo visível em todos os momentos:
+The active context should always be visible enough for safe operation:
 
-```txt
+```text
 Machine: prod-api
 Workspace: /srv/api
 Connection: Online
@@ -122,7 +131,7 @@ Pending approvals: 2
 
 ### Navigation
 
-Views ideais:
+Ideal future views:
 
 - `Machines`
 - `Commands`
@@ -134,36 +143,44 @@ Views ideais:
 - `History`
 - `Settings`
 
-`Node`, `Gateway` e `Relay` não devem aparecer como views principais. Eles pertencem a detalhes de máquina, diagnóstico ou settings.
+Current implemented/mock desktop surfaces are:
 
-### Machines View
+- `Processes`
+- `Pipelines`
+- `Scripts`
+- `Infrastructure`
+- `Project Config`
+- command feature views
+- `Tool Status`
+- `MCP`
+- `Skill Setup`
+- `Settings`
 
-Objetivo: gerenciar e alternar ambientes operáveis.
+Do not remove routes only because their runtime is mock. During UI-only work, routes should stay useful as product surfaces unless intentionally reset.
 
-Cada máquina deve mostrar:
+## Core Views
 
-- nome,
-- tipo (`Local`, `Windows`, `EC2`, `VPS`, `Managed`),
-- OS/arch,
-- conexão,
-- último heartbeat,
-- workspaces,
-- processos ativos,
-- aprovações pendentes,
-- agentes permitidos.
+### Machines
 
-Estados importantes:
+Future purpose: manage and switch operable environments.
 
-- `Online`
-- `Offline`
-- `Connecting`
-- `Needs setup`
-- `Update available`
-- `Policy required`
+Each machine should show:
 
-A ação primária deve ser `Open machine`.
+- Name.
+- Type, such as local, Windows, VPS, or future managed runner.
+- OS and architecture.
+- Connection status.
+- Last heartbeat.
+- Workspaces.
+- Active processes.
+- Pending approvals.
+- Allowed agents.
 
-Ações secundárias:
+Primary action:
+
+- `Open machine`
+
+Secondary actions:
 
 - `Add machine`
 - `Connect via SSH`
@@ -171,22 +188,22 @@ Ações secundárias:
 - `View diagnostics`
 - `Remove machine`
 
-### Commands View
+### Commands
 
-Objetivo: encontrar operações disponíveis naquela máquina.
+Purpose: find operations available in the active context.
 
-Comandos devem ser objetos estruturados, não só strings.
+Commands should be structured objects, not only raw shell strings.
 
-Um command row deve mostrar:
+Useful row shape:
 
-```txt
+```text
 Public IP
 curl ifconfig.me
-Recipe · Network · This Mac
+Recipe / Network / This Mac
 Risk: Network
 ```
 
-Fontes:
+Sources:
 
 - `System`
 - `Package Manager`
@@ -195,38 +212,39 @@ Fontes:
 - `Pipeline`
 - `History`
 
-Filtros:
+Filters:
 
-- source,
-- risk,
-- workspace,
-- recently used,
-- pinned,
-- agent-safe,
-- requires approval.
+- Source.
+- Risk.
+- Workspace.
+- Recently used.
+- Pinned.
+- Agent-safe.
+- Requires approval.
 
-Ação primária: `Stage`.
+Primary action:
 
-Nada deve rodar direto da lista sem passar por staging, exceto comandos explicitamente marcados como seguros e ainda assim com feedback claro.
+- `Stage`
+
+Nothing risky should run directly from a list without clear staging or approval.
 
 ### Command Detail
 
-O detalhe do comando deve responder:
+Command detail should answer:
 
-- o que este comando faz,
-- qual comando final será rodado,
-- em qual máquina,
-- em qual diretório,
-- qual é a fonte,
-- qual é o risco,
-- se usa rede,
-- se pode destruir dados,
-- quais argumentos faltam,
-- quais aprovações são necessárias.
+- What does this command do?
+- What exact command line will run?
+- Which machine and cwd will be used?
+- What is the source?
+- What is the risk?
+- Does it use network?
+- Can it destroy data?
+- Which args are missing?
+- Which approvals are required?
 
-Layout sugerido:
+Suggested layout:
 
-```txt
+```text
 Command header
   title, source, risk, machine
 
@@ -246,21 +264,21 @@ Recent results
 
 ### Stage Surface
 
-Staging é uma etapa de produto, não uma confirmação genérica.
+Staging is a product step, not a generic confirmation dialog.
 
-Deve mostrar:
+It should show:
 
-- `Machine`
-- `Workspace`
-- `Command`
-- `Requester`
-- `Risk`
-- `Required approval`
-- `Expected output`
+- Machine.
+- Workspace.
+- Command.
+- Requester.
+- Risk.
+- Required approval.
+- Expected output.
 
-Exemplo:
+Example:
 
-```txt
+```text
 Machine: prod-api
 Workspace: /srv/api
 Command: systemctl restart api
@@ -269,7 +287,7 @@ Risk: Privileged
 Approval: Required
 ```
 
-Ações:
+Actions:
 
 - `Approve and run`
 - `Edit command`
@@ -277,24 +295,24 @@ Ações:
 - `Save as recipe`
 - `Copy command`
 
-### Processes View
+### Processes
 
-Objetivo: acompanhar execuções em andamento e processos iniciados pelo Polter.
+Purpose: monitor running and recently completed operations.
 
-Process table:
+Process rows should show:
 
-- process id,
-- command,
-- machine,
-- workspace/cwd,
-- status,
-- pid,
-- uptime,
-- last output,
-- exit code,
-- requester.
+- Process id.
+- Command.
+- Machine or workspace.
+- cwd.
+- Status.
+- PID when real runtime is active.
+- Uptime.
+- Last output.
+- Exit code.
+- Requester.
 
-Status:
+Statuses:
 
 - `Running`
 - `Exited`
@@ -302,97 +320,91 @@ Status:
 - `Stopping`
 - `Needs attention`
 
-Detalhe de processo:
+Process detail should include:
 
-- command invocation,
-- stdout/stderr tabs,
-- structured events,
-- timeline,
-- stop/remove actions,
-- save output,
-- create recipe/pipeline from command.
+- Command invocation.
+- stdout/stderr tabs.
+- Structured events.
+- Timeline.
+- Stop/remove actions.
+- Save output.
+- Create recipe or pipeline from command.
 
-### Logs View
+### Logs
 
-Objetivo: leitura operacional, não dashboard genérico.
+Purpose: operational reading, not generic analytics.
 
-Logs devem ser:
+Logs should be:
 
-- monospace,
-- filtráveis,
-- copy-friendly,
-- estáveis em altura,
-- agrupados por machine/process/service,
-- capazes de virar eventos estruturados.
+- Monospace.
+- Filterable.
+- Copy-friendly.
+- Stable in height.
+- Grouped by machine, process, service, or workspace.
+- Able to become structured events later.
 
-Filtros:
+Useful filters:
 
-- machine,
-- workspace,
-- process,
-- stream (`stdout`, `stderr`, `system`),
-- severity,
-- time range,
-- error pattern.
+- Machine.
+- Workspace.
+- Process.
+- Stream.
+- Severity.
+- Time range.
+- Error pattern.
 
-O Polter deve destacar erros comuns sem esconder o log bruto:
+Polter should highlight common errors without hiding raw output:
 
-- port already in use,
-- command not found,
-- permission denied,
-- auth failed,
-- missing env,
-- migration failed,
-- connection refused.
+- Port already in use.
+- Command not found.
+- Permission denied.
+- Auth failed.
+- Missing environment variable.
+- Migration failed.
+- Connection refused.
 
-### Pipelines View
+### Pipelines
 
-Objetivo: transformar comandos repetidos em workflows reutilizáveis.
+Purpose: turn repeated command sequences into reusable workflows.
 
-Pipeline step deve sempre ter:
+Pipeline steps should define:
 
-- machine policy,
-- command source,
-- cwd,
-- args,
-- approval rule,
-- continue-on-error rule,
+- Command source.
+- cwd.
+- args.
+- flags.
+- approval rule.
+- continue-on-error rule.
 - output/log behavior.
 
-Pipelines podem ser:
+For an early real runtime, prefer single-machine pipelines. Multi-machine pipelines add complexity around permissions, rollback, and logs.
 
-- local-only,
-- machine-specific,
-- multi-machine no futuro.
+### Approvals
 
-Para v1, preferir pipelines por máquina. Multi-machine aumenta complexidade de rollback, permissões e logs.
+Purpose: inbox for human decisions.
 
-### Approvals View
+Approval rows should show:
 
-Objetivo: ser a caixa de entrada de decisões humanas.
-
-Approval row:
-
-```txt
+```text
 Codex wants to run
 systemctl restart api
-prod-api · /srv/api · Privileged
+prod-api / /srv/api / Privileged
 ```
 
-Campos:
+Fields:
 
-- requester,
-- agent/user,
-- machine,
-- workspace,
-- command,
-- risk,
-- reason,
-- created at,
-- timeout,
-- status.
+- Requester.
+- Agent or user.
+- Machine.
+- Workspace.
+- Command.
+- Risk.
+- Reason.
+- Created at.
+- Timeout.
+- Status.
 
-Status:
+Statuses:
 
 - `Pending`
 - `Approved`
@@ -401,23 +413,23 @@ Status:
 - `Executed`
 - `Failed`
 
-Approvals devem ser fáceis de comparar e revisar. A UI deve evitar popups caóticos para tudo. Toasts podem avisar, mas a inbox de approvals deve ser a fonte de verdade.
+Toasts can notify. The approval inbox should remain the source of truth.
 
-### Agents View
+### Agents
 
-Objetivo: mostrar quem pode pedir ações.
+Purpose: show who can request actions.
 
-Deve mostrar:
+Agent rows should show:
 
-- agent name,
-- client type (`Codex`, `OpenClaw`, `Claude Code`, `Custom MCP`),
-- connection status,
-- allowed machines,
-- allowed tools,
-- approval policy,
-- last requests.
+- Agent name.
+- Client type, such as Codex, Claude Code, OpenClaw, or custom MCP.
+- Connection status.
+- Allowed machines.
+- Allowed tools.
+- Approval policy.
+- Last requests.
 
-Ferramentas de agente devem ser apresentadas de forma humana:
+Agent tools should be human-readable:
 
 - `List machines`
 - `Search commands`
@@ -426,56 +438,56 @@ Ferramentas de agente devem ser apresentadas de forma humana:
 - `Run approved command`
 - `Run pipeline`
 
-Evitar apresentar `run_shell` como ferramenta padrão. Se existir, deve aparecer como perigosa e desabilitada por padrão.
+Avoid presenting unrestricted `run_shell` as a default tool.
 
-### History View
+### History
 
-Objetivo: memória operacional.
+Purpose: operational memory.
 
-History deve responder:
+History should answer:
 
-- o que foi pedido,
-- por quem,
-- em qual máquina,
-- quem aprovou,
-- o que rodou,
-- qual foi o resultado,
-- quais logs relevantes saíram,
-- se virou recipe ou pipeline.
+- What was requested?
+- Who requested it?
+- Where did it run?
+- Who approved it?
+- What executed?
+- What was the result?
+- Which logs matter?
+- Did it become a recipe or pipeline?
 
-Tipos:
+History event types:
 
-- command run,
-- pipeline run,
-- approval decision,
-- agent request,
-- machine connection event,
-- policy change.
+- Command run.
+- Pipeline run.
+- Approval decision.
+- Agent request.
+- Machine connection event.
+- Policy change.
 
-### Settings View
+### Settings
 
-Settings deve ser separada por:
+Settings should be grouped by:
 
-- account,
-- machines,
-- relay/cloud,
-- MCP,
-- policies,
-- storage,
-- diagnostics,
-- appearance.
+- Account.
+- Machines.
+- Relay or cloud.
+- MCP.
+- Policies.
+- Storage.
+- Diagnostics.
+- Appearance.
 
-Configuração técnica de `Node`, `Gateway` e `Relay` pertence aqui ou ao detalhe da máquina.
+Technical `Node`, `Gateway`, and `Relay` details belong in settings or machine diagnostics.
 
 ## Commander UX
 
-Commander é o centro operacional do Desktop.
+Commander is the desktop action/search center.
 
-Ele deve responder a intenção, não só buscar texto exato.
+It should respond to intent, not just exact text.
 
-Exemplos:
+Example queries:
 
-```txt
+```text
 public ip
 logs api
 restart service
@@ -484,50 +496,48 @@ show windows processes
 approve pending command
 ```
 
-Resultados devem sempre mostrar:
+Results should show:
 
-- tipo,
-- título,
-- comando/ação,
-- máquina,
-- fonte,
-- risco.
+- Type.
+- Title.
+- Command or action.
+- Context.
+- Source.
+- Risk.
 
-Exemplo:
+Example:
 
-```txt
-[Recipe] Public IP        curl ifconfig.me        This Mac · Network
-[Process] api-server      Running                 prod-api · 2h uptime
-[Command] ping            System                  Windows PC · Read-only
-[Approval] Restart API    Pending                 prod-api · Privileged
+```text
+[Recipe] Public IP        curl ifconfig.me        This Mac / Network
+[Process] api-server      Running                 prod-api / 2h uptime
+[Command] ping            System                  Windows PC / Read-only
+[Approval] Restart API    Pending                 prod-api / Privileged
 ```
 
-Commander deve ter planos:
+Commander should support:
 
-- list plane,
-- command detail plane,
-- approval plane,
-- machine quick actions,
-- process/log jump.
+- List plane.
+- Command detail plane.
+- Approval plane.
+- Machine quick actions.
+- Process/log jump.
 
-Ele não deve virar um formulário gigante. Quando a ação exige edição longa, Commander deve encaminhar para uma view ou inspector dedicado.
+Do not turn Commander into a giant form. Long editing flows should open a dedicated view, modal, sheet, or inspector.
 
-## CLI UX
+## CLI UX Direction
 
-A CLI é para operação headless, automação e servidores. Ela deve ser explícita, previsível e scriptável.
+The future CLI should be explicit, predictable, and scriptable.
 
-Princípios:
+Principles:
 
-- comandos remotos devem declarar a máquina,
-- ações perigosas não devem depender de estado invisível,
-- stdout deve ser útil para humanos,
-- `--json` deve existir para automação,
-- erros devem sugerir próximo passo,
-- comandos de setup devem explicar o que vão instalar ou iniciar.
+- Remote commands should declare their target machine.
+- Dangerous actions should not depend on invisible state.
+- stdout should be useful for humans.
+- `--json` should exist for automation.
+- Errors should suggest a next step.
+- Setup commands should explain what they install or start.
 
-### Command Groups
-
-Grupos principais:
+Potential command groups:
 
 ```bash
 polter machine ...
@@ -541,116 +551,15 @@ polter mcp ...
 polter node ...
 ```
 
-### Machine Commands
+No active CLI package exists in the current workspace. The old CLI/TUI under `legacy/tui` is archived.
 
-```bash
-polter machine list
-polter machine add windows --ssh erick@192.168.0.20
-polter machine add prod-api --ssh ubuntu@ec2-host
-polter machine status prod-api
-polter machine open prod-api
-polter machine remove prod-api
-```
+## MCP UX Direction
 
-`machine add` deve ser o comando de produto. Ele pode instalar/iniciar node por baixo, mas o usuário não deve precisar pensar nisso primeiro.
+MCP is the agent interface. Agents should receive structured tools, not unrestricted shell access.
 
-### Command Search And Staging
+Good future tools:
 
-```bash
-polter command search "public ip" --machine this-mac
-polter command search "process port" --machine windows
-polter command inspect public-ip --machine this-mac
-polter command stage "curl ifconfig.me" --machine this-mac
-```
-
-`stage` deve criar uma execução pendente ou um preview claro, dependendo da política.
-
-### Run
-
-Forma explícita:
-
-```bash
-polter run this-mac -- git status
-polter run windows -- powershell Get-Process
-polter run prod-api -- systemctl status api
-```
-
-Para máquina local, pode existir atalho:
-
-```bash
-polter run -- git status
-```
-
-Para máquina remota, exigir o alvo:
-
-```bash
-polter run prod-api -- git status
-```
-
-Não usar estado implícito para produção ou máquina remota.
-
-### Processes And Logs
-
-```bash
-polter process list --machine prod-api
-polter process inspect <process-id> --machine prod-api
-polter process stop <process-id> --machine prod-api
-
-polter logs --machine prod-api --service api
-polter logs --machine prod-api --process <process-id>
-polter logs --machine prod-api --tail 200
-```
-
-### Pipelines
-
-```bash
-polter pipeline list --machine prod-api
-polter pipeline inspect deploy-staging --machine prod-api
-polter pipeline run deploy-staging --machine prod-api
-```
-
-Pipeline run deve exibir steps, riscos e aprovações antes de executar quando necessário.
-
-### Approvals
-
-```bash
-polter approval list
-polter approval inspect <approval-id>
-polter approval approve <approval-id>
-polter approval deny <approval-id>
-```
-
-Approvals devem mostrar máquina, comando, requester e risco antes da decisão.
-
-### MCP
-
-```bash
-polter mcp install
-polter mcp status
-polter mcp tools
-polter mcp disconnect <client-id>
-```
-
-MCP CLI deve ajudar o usuário a entender quais agentes têm acesso e quais ferramentas estão expostas.
-
-### Node Diagnostics
-
-```bash
-polter node start
-polter node stop
-polter node status
-polter node logs
-```
-
-`node` é diagnóstico/infra. Não deve ser a primeira palavra na experiência normal.
-
-## MCP UX
-
-MCP é a interface dos agentes, mas a experiência deve continuar controlada pelo Polter.
-
-Ferramentas recomendadas:
-
-```txt
+```text
 list_machines
 get_machine_status
 search_commands
@@ -664,52 +573,17 @@ run_pipeline
 explain_command
 ```
 
-Fluxo ideal:
+Risky tool:
 
-```txt
-Agent asks for machine context
-  -> Polter returns machines and permissions
-Agent searches or stages command
-  -> Polter classifies risk
-Agent requests execution
-  -> Polter creates approval if needed
-Human approves
-  -> Polter executes through the node
-Agent receives structured result
-  -> Audit event is stored
+```text
+run_shell(command: string)
 ```
 
-O agente nunca deve precisar saber se a máquina usa SSH, local gateway, self-host relay ou cloud relay. Ele opera por `machineId`.
+If a shell-like tool exists, it should be restricted, audited, and disabled by default for sensitive machines.
 
-## Approval UX
+## Risk Taxonomy
 
-Approval é o freio de segurança do produto.
-
-Uma aprovação deve ser clara o bastante para o usuário decidir em segundos.
-
-Modelo:
-
-```txt
-Requester: Codex
-Machine: prod-api
-Workspace: /srv/api
-Command: systemctl restart api
-Risk: Privileged
-Reason: Restart API after config change
-```
-
-Decisões:
-
-- `Approve once`
-- `Deny`
-- `Edit and stage`
-- `Save policy`
-
-`Save policy` só deve aparecer quando o produto já tiver maturidade para regras persistentes. Para v1, approval manual é mais seguro.
-
-## Risk Language
-
-O produto deve usar uma taxonomia simples:
+Use a small taxonomy:
 
 - `Read-only`
 - `Normal`
@@ -717,146 +591,63 @@ O produto deve usar uma taxonomia simples:
 - `Destructive`
 - `Privileged`
 
-O risco deve aparecer em command rows, stage surface, approvals, history e agent tools.
+Risk should appear near actions:
 
-Exemplos:
+- Command rows.
+- Stage surfaces.
+- Approvals.
+- History.
+- Agent tools.
 
-```txt
-git status -> Read-only
-curl ifconfig.me -> Network
-rm -rf ./dist -> Destructive
-systemctl restart api -> Privileged
-```
+## Empty States And Errors
 
-## Empty States
+Empty states should be short and operational.
 
-Empty states devem ser úteis, curtos e operacionais.
+Good examples:
 
-Exemplos:
+- `No processes yet`
+- `Start a script or stage a command.`
+- `No pipelines saved`
+- `Create a pipeline from repeated commands.`
 
-```txt
-No machines connected.
-Add your first machine to start routing commands.
+Errors should include context and next step.
 
-No commands indexed.
-Run a scan or add a workspace.
+Example:
 
-No approvals pending.
-Agent requests that need review will appear here.
-```
-
-Nada de textos longos explicando o produto inteiro dentro da interface.
-
-## Error UX
-
-Erros devem ter contexto e próximo passo.
-
-Formato:
-
-```txt
-Connection failed
-Windows PC did not respond to the gateway heartbeat.
-
-Action:
-Check whether Polter Node is running on Windows PC.
-```
-
-Para command errors:
-
-```txt
+```text
 Command failed
-Exit code: 127
-Reason: command not found
-Next: search for installed package managers on this machine.
+Machine: prod-api
+Command: pnpm build
+Exit code: 1
+Next: Open logs
 ```
 
-Logs brutos devem continuar acessíveis.
+Raw logs should remain accessible.
 
-## Cross-Surface Consistency
+## Desktop, CLI, And MCP Relationship
 
-As três superfícies devem se complementar:
+The three surfaces should complement each other:
 
-```txt
-Desktop
-  inspection, approval, visual operation
+- Desktop: inspection, approval, dense workbench, logs, and human decisions.
+- CLI: setup, headless automation, servers, and scripts.
+- MCP: structured agent access under Polter policy.
 
-CLI
-  headless operation, bootstrap, automation
+Shared principles:
 
-MCP
-  agent access, structured tools, policy-controlled execution
-```
+- Show target context near every action.
+- Keep dangerous operations explicit.
+- Prefer staging before execution.
+- Keep logs and audit attached to results.
+- Avoid hidden state for production-like actions.
 
-Todas devem compartilhar:
+## Do Not Build
 
-- machine ids,
-- command ids,
-- process ids,
-- approval ids,
-- pipeline ids,
-- audit ids.
+Avoid:
 
-## Design Principles
-
-Do:
-
-- manter a interface densa e operacional,
-- usar split panes, tabelas, inspectors, logs e status strips,
-- priorizar teclado,
-- mostrar máquina e risco perto da ação,
-- stagear antes de executar,
-- registrar tudo em history/audit,
-- deixar agentes operarem por ferramentas estruturadas.
-
-Do not:
-
-- criar dashboard genérico de cards grandes,
-- usar hero/marketing dentro do app,
-- esconder a máquina alvo,
-- deixar produção depender de estado implícito,
-- expor shell livre para agente por padrão,
-- tratar `Node`, `Gateway` e `Relay` como conceitos principais da UI,
-- rodar ação destrutiva sem contexto e aprovação.
-
-## Ideal First Experience
-
-Primeiro uso no Desktop:
-
-```txt
-1. Open Polter
-2. See This Mac as the default machine
-3. Search "public ip" in Commander
-4. Stage the recipe
-5. Approve and run
-6. See output and audit event
-7. Add Windows PC
-8. Search Windows commands
-9. Stage remote command
-10. Approve and run through the gateway
-```
-
-Primeiro uso na CLI:
-
-```bash
-polter machine list
-polter command search "public ip" --machine this-mac
-polter run this-mac -- hostname
-polter machine add windows --ssh erick@192.168.0.20
-polter run windows -- hostname
-```
-
-Primeiro uso com agente:
-
-```txt
-1. User installs Polter MCP locally
-2. Agent lists machines
-3. Agent reads logs from a selected machine
-4. Agent stages a suggested command
-5. Desktop shows approval
-6. User approves
-7. Agent receives structured execution result
-```
-
-## Final Interface Sentence
-
-Polter's interface is a machine-first command cockpit where humans and agents search, stage, approve, run, observe, and audit operations across local and remote machines.
+- Generic card-heavy dashboards.
+- Marketing hero sections inside the app.
+- Unrestricted agent shell by default.
+- Hidden production target state.
+- Destructive actions without context and approval.
+- Treating `Node`, `Gateway`, or `Relay` as primary user navigation.
+- Treating the old TUI as the new desktop IA.
